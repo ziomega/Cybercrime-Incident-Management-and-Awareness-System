@@ -72,7 +72,7 @@ npm start
 ## ✅ Development Checklist
 
 ### Database
-- [] ER diagram design  
+- [ ] ER diagram design  
 - [ ] Create tables & relationships  
 - [ ] Seed initial data (user roles, test incidents, awareness content)  
 - [ ] Write optimized SQL queries for CRUD operations  
