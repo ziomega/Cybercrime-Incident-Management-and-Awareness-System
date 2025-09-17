@@ -1,7 +1,3 @@
-
-
 from django.contrib import admin
-from .models import Incidents, IncidentAssignments
 
-admin.site.register(Incidents)
-admin.site.register(IncidentAssignments)
+# Register your models here.
