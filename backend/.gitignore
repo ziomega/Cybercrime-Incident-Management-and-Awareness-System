@@ -7,19 +7,12 @@ __pycache__/
 .env
 *.env
 
-# Media and static files
-/media/
-staticfiles/
-static/
 
 # IDEs
 .vscode/
 .idea/
 *.swp
 
-# OS files
-.DS_Store
-Thumbs.db
 
 # Migrations 
 */migrations/*.pyc
