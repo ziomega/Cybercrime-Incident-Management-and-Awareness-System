@@ -11,5 +11,4 @@ class Evidence(models.Model):
     submitted_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'evidence'

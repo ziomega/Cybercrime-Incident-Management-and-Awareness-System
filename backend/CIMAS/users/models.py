@@ -9,7 +9,6 @@ class Users(models.Model):
     created_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'users'
 
 
@@ -19,5 +18,4 @@ class Investigators(models.Model):
     department = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'investigators'

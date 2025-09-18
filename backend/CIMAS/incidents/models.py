@@ -14,7 +14,6 @@ class Incidents(models.Model):
     reported_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'incidents'
 
 
@@ -26,5 +25,4 @@ class IncidentAssignments(models.Model):
     status = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'incident_assignments'

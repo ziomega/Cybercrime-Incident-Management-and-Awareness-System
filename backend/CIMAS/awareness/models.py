@@ -5,7 +5,6 @@ class CrimeTypes(models.Model):
     crime_type_name = models.CharField(max_length=100)
 
     class Meta:
-        managed = False
         db_table = 'crime_types'
 
 
@@ -16,5 +15,4 @@ class Solutions(models.Model):
     awareness_level = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'solutions'
