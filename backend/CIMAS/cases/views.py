@@ -1,3 +1,13 @@
 from django.shortcuts import render
 
-# Create your views here.
+def assign_case(request, id):
+	pass
+
+def get_assigned_cases(request, userId):
+	pass
+
+def reassign_case(request, id):
+	pass
+
+def get_unassigned_cases(request):
+	pass
