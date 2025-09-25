@@ -95,6 +95,9 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 import json
 from .models import Incidents as Incident
+from .models import Locations
+from awareness.models import CrimeTypes
+
 
 # -------------------------------
 # GET all incidents (admin sees all, user sees own)
@@ -106,15 +109,37 @@ def incidents_list(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         description = data.get("description")
+        location_id = data.get("location")   # expecting integer ID
+        crime_type_id = data.get("crime_type")
+
         if not description:
             return JsonResponse({"error": "Description required"}, status=400)
+
+        # fetch related objects if IDs provided
+        location = None
+        crime_type = None
+        if location_id:
+            location = get_object_or_404(Locations, id=location_id)
+        if crime_type_id:
+            crime_type = get_object_or_404(CrimeTypes, id=crime_type_id)
 
         incident = Incident.objects.create(
             user=request.user,
             description=description,
-            status="pending"
+            status="in_progress",  # ✅ use this instead of "pending"
+            location=location,
+            crime_type=crime_type
         )
-        return JsonResponse({"message": "Incident created", "id": incident.id}, status=201)
+
+        return JsonResponse(
+            {
+                "message": "Incident created",
+                "id": incident.id,
+                "location": location.address if location else None,
+                "crime_type": crime_type.name if crime_type else None,
+            },
+            status=201
+        )
 
     elif request.method == 'GET':
         if getattr(request.user, "role", None) == "admin":
@@ -127,7 +152,9 @@ def incidents_list(request):
             "user": inc.user.email,
             "description": inc.description,
             "status": inc.status,
-            "reported_at": inc.reported_at
+            "reported_at": inc.reported_at,
+            "location": inc.location.address if inc.location else None,
+            "crime_type": inc.crime_type.name if inc.crime_type else None,
         } for inc in incidents]
 
         return JsonResponse(data, safe=False)
@@ -152,7 +179,9 @@ def incident_detail(request, id):
             "user": incident.user.email,
             "description": incident.description,
             "status": incident.status,
-            "reported_at": incident.reported_at
+            "reported_at": incident.reported_at,
+            "case_location": incident.location.address if incident.location else None,
+            "crime_type": incident.crime_type.name if incident.crime_type else None,
         })
 
     elif request.method == 'PUT':
