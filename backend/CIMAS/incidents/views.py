@@ -136,7 +136,7 @@ def incidents_list(request):
                 "message": "Incident created",
                 "id": incident.id,
                 "location": location.address if location else None,
-                "crime_type": crime_type.name if crime_type else None,
+                "crime_type": crime_type.crime_type_name if crime_type else None,
             },
             status=201
         )
@@ -154,7 +154,7 @@ def incidents_list(request):
             "status": inc.status,
             "reported_at": inc.reported_at,
             "location": inc.location.address if inc.location else None,
-            "crime_type": inc.crime_type.name if inc.crime_type else None,
+            "crime_type": inc.crime_type.crime_type_name if inc.crime_type else None,
         } for inc in incidents]
 
         return JsonResponse(data, safe=False)
@@ -181,7 +181,7 @@ def incident_detail(request, id):
             "status": incident.status,
             "reported_at": incident.reported_at,
             "case_location": incident.location.address if incident.location else None,
-            "crime_type": incident.crime_type.name if incident.crime_type else None,
+            "crime_type": incident.crime_type.crime_type_name if incident.crime_type else None,
         })
 
     elif request.method == 'PUT':
