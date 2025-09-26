@@ -99,46 +99,42 @@ def logout(request):
         return JsonResponse({'error': 'Invalid token'}, status=400)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
-def get_me(request):
+def get_me__update_me(request):
     user = request.user
-    return JsonResponse({
-        'id': user.id,
-        'email': user.email,
-        'first_name': user.first_name,
-        'last_name': user.last_name,
-        'role': user.role,
-    })
-
-
-@api_view(['PUT'])
-@permission_classes([IsAuthenticated])
-def update_me(request):
-    try:
-        data = json.loads(request.body)
-        user = request.user
-
-        if 'first_name' in data:
-            user.first_name = data['first_name']
-        if 'last_name' in data:
-            user.last_name = data['last_name']
-        if 'email' in data:
-            if User.objects.exclude(id=user.id).filter(email=data['email']).exists():
-                return JsonResponse({'error': 'Email already exists'}, status=400)
-            user.email = data['email']
-
-        user.save()
+    if request.method == 'GET':
         return JsonResponse({
             'id': user.id,
             'email': user.email,
             'first_name': user.first_name,
-            'last_name': user.last_name,
-            'role': user.role,
-        })
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        'last_name': user.last_name,
+        'role': user.role,
+    })
+    else:
+        try:
+            data = json.loads(request.body)
+            user = request.user
 
+            if 'first_name' in data:
+                user.first_name = data['first_name']
+            if 'last_name' in data:
+                user.last_name = data['last_name']
+            if 'email' in data:
+                if User.objects.exclude(id=user.id).filter(email=data['email']).exists():
+                    return JsonResponse({'error': 'Email already exists'}, status=400)
+                user.email = data['email']
+
+            user.save()
+            return JsonResponse({
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'role': user.role,
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdminUser])
