@@ -35,12 +35,6 @@ class Incidents(models.Model):
         return f"Incident {self.id} - {self.status}"
 
 class IncidentAssignments(models.Model):
-    STATUS_CHOICES = [
-        ("in_progress", "In Progress"),
-        ("assigned", "Assigned"),
-        ("resolved", "Resolved"),
-        
-    ]
     incident = models.ForeignKey(Incidents, on_delete=models.CASCADE)
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -48,7 +42,6 @@ class IncidentAssignments(models.Model):
         null=True,  # allow null for existing rows
         blank=True
     )
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="assigned")
     assigned_at = models.DateTimeField(default=timezone.now,null=True)
   # ✅ proper default
 

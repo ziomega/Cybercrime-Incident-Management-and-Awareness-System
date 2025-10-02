@@ -95,7 +95,6 @@ class Command(BaseCommand):
                     "assigned_to": random.choice(user_objs),
                     "assigned_at": timezone.now()
                     - timezone.timedelta(days=random.randint(0, 365)),
-                    "status": random.choice(["in_progress", "assigned", "resolved"]),
                 },
             )
 
