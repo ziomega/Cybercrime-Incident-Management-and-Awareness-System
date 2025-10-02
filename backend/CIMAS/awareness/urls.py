@@ -3,13 +3,13 @@ from .views import AwarenessResourceListCreateView, AwarenessResourceDetailView
 
 urlpatterns = [
     # List all resources OR create a new one
-    path("resources/", AwarenessResourceListCreateView.as_view(), name="resource_list_create"), 
+    path("api/awareness/resources/", AwarenessResourceListCreateView.as_view(), name="resource_list_create"), 
 	#this path is for both listing and creating resources
     #when the request matches this path, it invokes the respective view 
     #names igves this route a name uesd for reversing urls 
     
     # Get details of one resource / update it / delete it
-    path("resources/<int:pk>/", AwarenessResourceDetailView.as_view(), name="resource_detail"),
+    path("api/awareness/resources/<int:pk>/", AwarenessResourceDetailView.as_view(), name="resource_detail"),
     #this path is for getting details of one resource, updating it or deleting it
 	#here <int:pk? captures a segment of url and passes it as primary key 
 	#rest details same as above 
