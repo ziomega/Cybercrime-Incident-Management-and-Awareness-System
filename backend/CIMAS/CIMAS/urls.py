@@ -16,10 +16,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+) #change made here for JWT auth
 
+"""
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('users.urls')),
+    path('', include('users.urls')), #'' means mounted at root
     path('', include('incidents.urls')),
     path('', include('evidence.urls')),
     path('', include('cases.urls')),
@@ -27,3 +32,23 @@ urlpatterns = [
     path('', include('analytics.urls')),
     path('', include('awareness.urls')),
 ]
+
+"""
+#looks for this exact variable name to know how to route urls
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/users/", include("users.urls")),
+
+     #  CHANGE made 2  JWT authentication endpoints
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    path("api/incidents/", include("incidents.urls")),
+    path("api/evidence/", include("evidence.urls")),
+    path("api/cases/", include("cases.urls")),
+    path("api/logs/", include("activity_logs.urls")),
+    path("api/analytics/", include("analytics.urls")),
+    path("api/awareness/", include("awareness.urls")),  # Awareness app routes
+]
+# path("url in browser:", include(detailed url patterns in that app))
+

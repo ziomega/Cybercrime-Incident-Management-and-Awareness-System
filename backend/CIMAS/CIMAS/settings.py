@@ -87,6 +87,7 @@ WSGI_APPLICATION = 'CIMAS.wsgi.application'
 
 DATABASES = {
     'default': {
+
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('DB_NAME'),
         'USER': os.getenv('DB_USER'),
@@ -95,6 +96,7 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
+
 
 
 # Password validation
@@ -128,6 +130,8 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
+
+APPEND_SLASH = True # Ensure trailing slashes are appended to URLs
 
 
 # Static files (CSS, JavaScript, Images)
