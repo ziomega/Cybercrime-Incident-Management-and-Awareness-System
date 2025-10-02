@@ -16,7 +16,7 @@ class Evidence(models.Model):
         on_delete=models.CASCADE,
         db_column='submitted_by'
     )
-    file_path = models.CharField(max_length=255)
+    file = models.FileField(upload_to='evidences/', null=True, blank=True)  # File upload field
     description = models.TextField(blank=True, null=True)
     submitted_at = models.DateTimeField(default=timezone.now)
 

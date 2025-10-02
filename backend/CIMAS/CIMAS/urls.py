@@ -21,7 +21,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 ) #change made here for JWT auth
 
-"""
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('users.urls')), #'' means mounted at root
@@ -33,22 +33,22 @@ urlpatterns = [
     path('', include('awareness.urls')),
 ]
 
-"""
+
 #looks for this exact variable name to know how to route urls
-urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("api/users/", include("users.urls")),
+# urlpatterns = [
+#     path("admin/", admin.site.urls),
+#     path("api/users/", include("users.urls")),
 
-     #  CHANGE made 2  JWT authentication endpoints
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+#      #  CHANGE made 2  JWT authentication endpoints
+#     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+#     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
-    path("api/incidents/", include("incidents.urls")),
-    path("api/evidence/", include("evidence.urls")),
-    path("api/cases/", include("cases.urls")),
-    path("api/logs/", include("activity_logs.urls")),
-    path("api/analytics/", include("analytics.urls")),
-    path("api/awareness/", include("awareness.urls")),  # Awareness app routes
-]
+#     path("api/incidents/", include("incidents.urls")),
+#     path("api/evidence/", include("evidence.urls")),
+#     path("api/cases/", include("cases.urls")),
+#     path("api/logs/", include("activity_logs.urls")),
+#     path("api/analytics/", include("analytics.urls")),
+#     path("api/awareness/", include("awareness.urls")),  # Awareness app routes
+# ]
 # path("url in browser:", include(detailed url patterns in that app))
 
