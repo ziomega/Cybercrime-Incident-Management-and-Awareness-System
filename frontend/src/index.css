@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color:oklch(0.17 0.01 260) ;
+    color:oklch(0.97 0.01 260);
+    overflow-x: hidden;
+  }
+
+  button{
+    cursor: pointer;
+  }
+}

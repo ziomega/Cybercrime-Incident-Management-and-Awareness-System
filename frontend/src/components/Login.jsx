@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { login as loginApi } from '../api/auth';
 
@@ -12,41 +12,61 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       const data = await loginApi(email, password);
-      // Expecting data to have { access: "access_token", refresh: "refresh_token" }
-      login(data); // Save tokens using AuthContext
-      navigate('/dashboard'); // Redirect to dashboard
+      login(data);
+      navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Failed to login');
+      setError(err.message || 'Failed to login. Please check your credentials.');
     }
   };
 
   return (
-    <div className="login-container">
-      <h1>Login</h1>
-      {error && <div className="error">{error}</div>}
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email:</label>
+    <div className="flex flex-col items-center justify-center min-h-screen p-8">
+      <h1 className="mb-6 text-4xl font-bold">Login</h1>
+      {error && (
+        <div className="w-full max-w-md p-4 mb-6 text-center text-red-400 bg-red-900 bg-opacity-25 border border-red-400 rounded-lg">
+          {error}
+        </div>
+      )}
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-6 p-10 rounded-xl bg-[oklch(0.22_0.01_260)] w-full max-w-md shadow-lg"
+      >
+        <div className="flex flex-col">
+          <label className="mb-3 text-base font-medium">Email:</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            className="p-4 rounded-md border border-[oklch(0.4_0.01_260)] bg-[oklch(0.17_0.01_260)] text-[oklch(0.97_0.01_260)] text-base transition-colors duration-200 focus:outline-none focus:border-[oklch(0.6_0.15_260)] focus:ring-2 focus:ring-[oklch(0.6_0.15_260/0.3)]"
           />
         </div>
-        <div>
-          <label>Password:</label>
+        <div className="flex flex-col">
+          <label className="mb-3 text-base font-medium">Password:</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            className="p-4 rounded-md border border-[oklch(0.4_0.01_260)] bg-[oklch(0.17_0.01_260)] text-[oklch(0.97_0.01_260)] text-base transition-colors duration-200 focus:outline-none focus:border-[oklch(0.6_0.15_260)] focus:ring-2 focus:ring-[oklch(0.6_0.15_260/0.3)]"
           />
         </div>
-        <button type="submit">Login</button>
+        <button
+          type="submit"
+          className="p-4 mt-2 text-lg font-bold rounded-md cursor-pointer bg-[oklch(0.6_0.15_260)] text-[oklch(0.17_0.01_260)] transition-transform duration-100 ease-in-out hover:bg-[oklch(0.7_0.15_260)] active:scale-[0.98]"
+        >
+          Login
+        </button>
       </form>
+      <p className="mt-6 text-center">
+        Don't have an account?{' '}
+        <Link to="/signup" className="text-[oklch(0.6_0.15_260)] hover:underline">
+          Create one
+        </Link>
+      </p>
     </div>
   );
 }
