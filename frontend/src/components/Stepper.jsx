@@ -43,7 +43,10 @@ export default function Stepper({
   };
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, x: -100, scale: 0.85, y: 20 }}
+    whileInView={{ opacity: 1, x: 0,scale: 1,y: 0 }}
+    transition={{ duration: 0.5 }}
       className="flex min-h-full flex-1 flex-col items-center justify-center p-4"
       {...rest}
     >
@@ -100,7 +103,7 @@ export default function Stepper({
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
