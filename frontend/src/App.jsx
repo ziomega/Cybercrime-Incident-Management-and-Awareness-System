@@ -16,7 +16,7 @@ function RoleBasedDashboard() {
   const { user } = useAuth(); 
   const role = user?.role; 
   
-  if (role === 'admin') {
+  if (role === 'admin' || true ) {
     return <DashboardAdmin />; 
   }
   if(role==="investigator")
