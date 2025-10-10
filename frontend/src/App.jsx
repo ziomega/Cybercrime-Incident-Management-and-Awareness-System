@@ -1,44 +1,57 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './App.css';
-import Home from './components/Home';
-import Dashboard from './components/Dashboard';
+import HomeGuest from './components/Guest/Home';
+import  DashboardAdmin from './components/Admin/Dashboard';
+import DashboardInvestigator from './components/Investigator/Dashboard';
+import DashboardUser from './components/Victim/Dashboard';
 import Profile from './components/Profile';
 import Signup from './components/Signup';
 import Login from './components/Login';
 import ProtectedRoute from './components/ProtectedRoute';
-import { AuthProvider } from './contexts/AuthContext';
-import Hero from './components/Hero';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
-import FeatureCards from './components/FeatureCards';
-import CybersecurityParallax from './components/CybersecurityParallax';
+
+// Component for role-based dashboard rendering
+function RoleBasedDashboard() {
+  const { user } = useAuth(); 
+  const role = user?.role; 
+  
+  if (role === 'admin') {
+    return <DashboardAdmin />; 
+  }
+  if(role==="investigator")
+    return <DashboardInvestigator />;
+   else if (role === 'user') {
+    return <DashboardUser />; 
+  } else {
+    return (<HomeGuest />);
+  }
+}
+
+// Component for role-based profile rendering
+function RoleBasedProfile() {
+  const { user } = useAuth(); 
+  const role = user?.role;
+  
+  if (role === 'admin') {
+    return <Profile />; 
+  } else if (role === 'user') {
+    return <Profile />; 
+  } else if(role==="investigator"){
+    return <Profile />;
+  }
+}
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Navbar/>
+        <Navbar />
         <Routes>
-          <Route path="/" element={
-            <>
-              {/* This is the top section, it should just be rendered */}
-              <Hero />
-              
-              {/* This component handles its own internal parallax based on scroll.
-                  No need for an external Framer Motion wrapper. */}
-              <CybersecurityParallax />
-
-              {/* This is the bottom section, it should just be rendered */}
-              <FeatureCards />
-            </>
-          } />
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
+          <Route path="/" element={<RoleBasedDashboard />} />
           <Route path="/profile" element={
             <ProtectedRoute>
-              <Profile />
+              <RoleBasedProfile />
             </ProtectedRoute>
           } />
           <Route path="/signup" element={<Signup />} />
