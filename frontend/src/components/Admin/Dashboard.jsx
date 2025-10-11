@@ -7,7 +7,8 @@ import IncidentHotspots from "./IncidentHotspots";
 import SystemMetrics from "../SystemMetrics";
 import TypeOfCrime from "./TypeOfCrime";
 import AllIncidents from "./AllIncidents";
-
+import Users from "./Users";
+import AssignCase from "./AssignCase";
 
 function DashboardAdmin() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -29,6 +30,9 @@ function DashboardAdmin() {
       </>
       )}
       {
+        activeTab==="users" && <Users />
+      }
+      {
         activeTab==="incidents" && <AllIncidents />
       }
       {activeTab === 'analytics' && (
@@ -43,6 +47,11 @@ function DashboardAdmin() {
       <IncidentHotspots />
         </>
         )}
+      {activeTab === 'team' && (
+        <div className="">
+          <AssignCase/>
+        </div>
+      )}
     </div>
   );
 }

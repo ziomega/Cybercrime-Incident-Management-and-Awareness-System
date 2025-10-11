@@ -19,7 +19,7 @@ const RoleBasedTab = ({ activeTab, setActiveTab }) => {
 
   // Define tabs based on user role
   const getTabsByRole = () => {
-    const userRole = user?.role || 'admin'; // Default to victim if no role
+    const userRole = user?.role || 'investigator'; // Default to victim if no role
 
     const roleTabs = {
       admin: [
@@ -37,13 +37,11 @@ const RoleBasedTab = ({ activeTab, setActiveTab }) => {
         { value: 'activity', label: 'Activity Log', icon: Activity },
         { value: 'evidence', label: 'Evidence', icon: Shield },
         { value: 'reports', label: 'Reports', icon: CheckCircle },
-        { value: 'messages', label: 'Messages', icon: MessageSquare },
       ],
       victim: [
         { value: 'overview', label: 'Overview', icon: BarChart3 },
         { value: 'incidents', label: 'My Incidents', icon: AlertTriangle },
         { value: 'status', label: 'Case Status', icon: CheckCircle },
-        { value: 'messages', label: 'Messages', icon: MessageSquare },
         { value: 'resources', label: 'Resources', icon: FileText },
       ],
       guest: [

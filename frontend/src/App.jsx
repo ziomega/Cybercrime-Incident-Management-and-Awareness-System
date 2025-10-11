@@ -10,16 +10,17 @@ import Login from './components/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
+import Messaging from './Messaging';
 
 // Component for role-based dashboard rendering
 function RoleBasedDashboard() {
   const { user } = useAuth(); 
   const role = user?.role; 
   
-  if (role === 'admin' || true ) {
+  if (role === 'admin' || false ) {
     return <DashboardAdmin />; 
   }
-  if(role==="investigator")
+  if(role==="investigator" || true)
     return <DashboardInvestigator />;
    else if (role === 'user') {
     return <DashboardUser />; 
@@ -49,6 +50,9 @@ function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<RoleBasedDashboard />} />
+          <Route path="/messages" element={
+              <Messaging/>
+          } />
           <Route path="/profile" element={
             <ProtectedRoute>
               <RoleBasedProfile />
