@@ -11,7 +11,8 @@ import {
   Settings,
   TrendingUp,
   Database,
-  UserCheck
+  UserCheck,
+  Phone
 } from 'lucide-react';
 
 const RoleBasedTab = ({ activeTab, setActiveTab }) => {
@@ -19,7 +20,7 @@ const RoleBasedTab = ({ activeTab, setActiveTab }) => {
 
   // Define tabs based on user role
   const getTabsByRole = () => {
-    const userRole = user?.role || 'investigator'; // Default to victim if no role
+    const userRole = user?.role || 'victim'; // Default to victim if no role
 
     const roleTabs = {
       admin: [
@@ -42,7 +43,7 @@ const RoleBasedTab = ({ activeTab, setActiveTab }) => {
         { value: 'overview', label: 'Overview', icon: BarChart3 },
         { value: 'incidents', label: 'My Incidents', icon: AlertTriangle },
         { value: 'status', label: 'Case Status', icon: CheckCircle },
-        { value: 'resources', label: 'Resources', icon: FileText },
+        { value: 'support', label: 'Support', icon: Phone },
       ],
       guest: [
         { value: 'overview', label: 'Overview', icon: BarChart3 },

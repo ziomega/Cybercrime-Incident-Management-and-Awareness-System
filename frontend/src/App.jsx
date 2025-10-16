@@ -20,9 +20,9 @@ function RoleBasedDashboard() {
   if (role === 'admin' || false ) {
     return <DashboardAdmin />; 
   }
-  if(role==="investigator" || true)
+  if(role==="investigator" || false)
     return <DashboardInvestigator />;
-   else if (role === 'user') {
+   else if (role === 'user' || true) {
     return <DashboardUser />; 
   } else {
     return (<HomeGuest />);

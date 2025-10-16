@@ -56,7 +56,7 @@ const mockMessagesData = {
 function Messaging() {
   const { user } = useAuth();
 //   const userRole = user?.role?.toLowerCase() || 'investigator';
-const userRole = 'investigator';
+const userRole = 'admin';
   
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState({});
