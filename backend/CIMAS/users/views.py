@@ -10,6 +10,8 @@ User = get_user_model()
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
+    refresh['role'] = user.role
+    refresh['name'] = user.first_name + " " + user.last_name
     return {
         'refresh': str(refresh),
         'access': str(refresh.access_token),
@@ -72,13 +74,6 @@ def login(request):
         if user is not None:
             tokens = get_tokens_for_user(user)
             return JsonResponse({
-                'user': {
-                    'id': user.id,
-                    'email': user.email,
-                    'first_name': user.first_name,
-                    'last_name': user.last_name,
-                    'role': user.role,
-                },
                 'tokens': tokens
             })
         else:
@@ -109,6 +104,8 @@ def get_me__update_me(request):
             'email': user.email,
             'first_name': user.first_name,
         'last_name': user.last_name,
+        'phone': user.phone,
+        'bio': user.bio,
         'role': user.role,
     })
     else:
@@ -124,6 +121,10 @@ def get_me__update_me(request):
                 if User.objects.exclude(id=user.id).filter(email=data['email']).exists():
                     return JsonResponse({'error': 'Email already exists'}, status=400)
                 user.email = data['email']
+            if 'phone' in data:
+                user.phone = data['phone']
+            if 'bio' in data:
+                user.bio = data['bio']
 
             user.save()
             return JsonResponse({

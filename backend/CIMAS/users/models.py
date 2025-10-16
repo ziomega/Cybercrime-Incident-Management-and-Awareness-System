@@ -38,6 +38,8 @@ class CustomUser(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='victim')
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    bio = models.TextField(blank=True, null=True)
 
     USERNAME_FIELD = 'email'
     username = None

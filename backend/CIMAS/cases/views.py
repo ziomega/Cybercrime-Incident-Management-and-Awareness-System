@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+import random
 from django.shortcuts import render
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -43,10 +45,19 @@ def get_assigned_cases_me(request):
 	userId = request.user.id
 	assigned_cases = IncidentAssignments.objects.filter(assigned_to__id=userId)
 	data = [{
-		"assignment_id": ac.id,
-		"case_id": ac.incident.id,
-		"case_description": ac.incident.description,
-		"assigned_to": ac.assigned_to.first_name + " " + ac.assigned_to.last_name,
+		"id": ac.incident.id if ac.incident.id else 0,
+		"title": ac.incident.title if ac.incident.title else "No Title",
+		"description": ac.incident.description if ac.incident.description else "No Description",
+		"crime_type": ac.incident.crime_type.crime_type_name if ac.incident.crime_type and ac.incident.crime_type.crime_type_name else "Unknown",
+		"status": ac.incident.status if ac.incident.status else "unknown",
+		"priority": ac.priority if ac.priority else "medium",
+		"assigned_date": ac.assigned_at if ac.assigned_at else "Unknown",
+		"deadline": (ac.assigned_deadline if ac.assigned_deadline else datetime.now() + timedelta(days=17)).strftime('%Y-%m-%dT%H:%M:%S') if ac.assigned_deadline else "not set",
+		"reported_by": (ac.incident.user.first_name + " " + ac.incident.user.last_name) if ac.incident.user and ac.incident.user.first_name and ac.incident.user.last_name else "Unknown",
+		"location": (ac.incident.location.address + " " + ac.incident.location.city + " " + ac.incident.location.state + " " + ac.incident.location.country) if ac.incident.location and ac.incident.location.address and ac.incident.location.city and ac.incident.location.state and ac.incident.location.country else "Unknown",
+		"progress": random.randint(0, 100),
+		"evidence_count": random.randint(0, 5), 
+		"updates_count": random.randint(0, 10),  
 	} for ac in assigned_cases]
 	return Response(data) 
 

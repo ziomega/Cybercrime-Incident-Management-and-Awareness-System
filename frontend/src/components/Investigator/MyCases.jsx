@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileText, 
   Calendar, 
@@ -13,79 +13,41 @@ import {
   Edit,
   Upload,
   Search,
-  Filter
+  Filter,
+  Loader2
 } from 'lucide-react';
+import axiosInstance from '../../api/axiosConfig';
 
 const MyCases = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedCase, setSelectedCase] = useState(null);
+  const [cases, setCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock data for assigned cases
-  const mockCases = [
-    {
-      id: 1,
-      title: 'Phishing Attack Investigation',
-      description: 'Bank phishing email with malicious links requesting credentials',
-      crime_type: 'Phishing',
-      status: 'in_progress',
-      priority: 'high',
-      assigned_date: '2025-01-08T10:30:00Z',
-      deadline: '2025-01-15T23:59:00Z',
-      reported_by: 'john.doe@example.com',
-      location: 'New York, NY',
-      progress: 65,
-      evidence_count: 3,
-      updates_count: 5
-    },
-    {
-      id: 5,
-      title: 'E-commerce Fraud Case',
-      description: 'Online shopping fraud - seller disappeared after payment',
-      crime_type: 'E-commerce Fraud',
-      status: 'in_progress',
-      priority: 'medium',
-      assigned_date: '2025-01-07T14:20:00Z',
-      deadline: '2025-01-14T23:59:00Z',
-      reported_by: 'david.brown@example.com',
-      location: 'Phoenix, AZ',
-      progress: 40,
-      evidence_count: 2,
-      updates_count: 3
-    },
-    {
-      id: 8,
-      title: 'Cyberbullying Investigation',
-      description: 'Harassment through social media platforms with threats',
-      crime_type: 'Cyberbullying',
-      status: 'under_review',
-      priority: 'high',
-      assigned_date: '2025-01-09T09:00:00Z',
-      deadline: '2025-01-16T23:59:00Z',
-      reported_by: 'jennifer.white@example.com',
-      location: 'Seattle, WA',
-      progress: 25,
-      evidence_count: 4,
-      updates_count: 2
-    },
-    {
-      id: 12,
-      title: 'Identity Theft Case',
-      description: 'Personal information stolen and used for fraudulent activities',
-      crime_type: 'Identity Theft',
-      status: 'resolved',
-      priority: 'high',
-      assigned_date: '2025-01-01T08:00:00Z',
-      deadline: '2025-01-08T23:59:00Z',
-      reported_by: 'michael.johnson@example.com',
-      location: 'Boston, MA',
-      progress: 100,
-      evidence_count: 6,
-      updates_count: 8
-    }
-  ];
+  // Fetch assigned cases from API
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await axiosInstance.get('/cases/assigned');
+        setCases(response.data);
+      } catch (err) {
+        console.error('Error fetching cases:', err);
+        setError(err.response?.data?.message || 'Failed to load cases. Please try again.');
+        
+        // Fallback to mock data in case of error
+        setCases([
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const [cases, setCases] = useState(mockCases);
+    fetchCases();
+  }, []);
 
   // Filter cases
   const filteredCases = cases.filter(case_item => {
@@ -173,14 +135,82 @@ const MyCases = () => {
           <p className="text-gray-400 mt-1">Manage and track your assigned investigations</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-400">
-            {filteredCases.length} case{filteredCases.length !== 1 ? 's' : ''}
-          </span>
+          {!loading && (
+            <span className="text-sm text-gray-400">
+              {filteredCases.length} case{filteredCases.length !== 1 ? 's' : ''}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Search and Filter */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Error Message */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-red-500/10 border border-red-500/30 rounded-lg p-4"
+          >
+            <div className="flex items-center gap-2 text-red-400">
+              <AlertCircle className="w-5 h-5" />
+              <span className="font-medium">{error}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="mb-4"
+          >
+            <Loader2 className="w-16 h-16 text-blue-500" />
+          </motion.div>
+          <h3 className="text-xl font-semibold text-gray-300 mb-2">Loading Cases...</h3>
+          <p className="text-gray-500">Please wait while we fetch your assigned cases</p>
+          
+          {/* Skeleton Cards */}
+          <div className="w-full mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: i * 0.1 }}
+                className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="space-y-3 flex-1">
+                    <div className="h-4 bg-gray-800 rounded w-20 animate-pulse" />
+                    <div className="h-6 bg-gray-800 rounded w-3/4 animate-pulse" />
+                    <div className="h-4 bg-gray-800 rounded w-full animate-pulse" />
+                  </div>
+                </div>
+                <div className="h-8 bg-gray-800 rounded w-32 animate-pulse" />
+                <div className="space-y-2">
+                  <div className="h-2 bg-gray-800 rounded-full animate-pulse" />
+                </div>
+                <div className="space-y-2">
+                  {[1, 2, 3].map((j) => (
+                    <div key={j} className="h-4 bg-gray-800 rounded w-2/3 animate-pulse" />
+                  ))}
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <div className="h-10 bg-gray-800 rounded flex-1 animate-pulse" />
+                  <div className="h-10 bg-gray-800 rounded w-16 animate-pulse" />
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Search and Filter */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
@@ -222,7 +252,7 @@ const MyCases = () => {
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-blue-400 font-bold text-lg">#{case_item.id}</span>
+                  <span className="text-blue-400 font-bold text-lg">#{index+1}</span>
                   {getPriorityBadge(case_item.priority)}
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">{case_item.title}</h3>
@@ -316,6 +346,8 @@ const MyCases = () => {
           <h3 className="text-xl font-bold text-gray-400 mb-2">No cases found</h3>
           <p className="text-gray-500">Try adjusting your search or filters</p>
         </div>
+      )}
+        </>
       )}
     </div>
   );

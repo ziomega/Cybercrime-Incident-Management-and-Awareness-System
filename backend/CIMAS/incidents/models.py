@@ -21,7 +21,8 @@ class Incidents(models.Model):
         
     ]
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255, null=True, blank=True)  
     description = models.TextField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="in_progress")
     reported_at = models.DateTimeField(default=timezone.now)
@@ -42,8 +43,16 @@ class IncidentAssignments(models.Model):
         null=True,  # allow null for existing rows
         blank=True
     )
+
+    class priority(models.TextChoices):
+        LOW = 'low', 'Low'
+        MEDIUM = 'medium', 'Medium'
+        HIGH = 'high', 'High'
+    priority = models.CharField(max_length=10, choices=priority.choices, default=priority.MEDIUM)
     assigned_at = models.DateTimeField(default=timezone.now,null=True)
-  # ✅ proper default
+    assigned_deadline = models.DateTimeField(default=timezone.now,null=True)
+
+
 
     def __str__(self):
         return f"{self.incident} assigned at {self.assigned_at}"

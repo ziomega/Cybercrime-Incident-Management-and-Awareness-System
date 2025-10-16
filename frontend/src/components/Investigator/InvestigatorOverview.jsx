@@ -9,8 +9,11 @@ import {
   Calendar,
   Target
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 const InvestigatorOverview = () => {
+  const { user } = useAuth();
+
   // Mock stats data
   const stats = {
     total_assigned: 8,
@@ -110,16 +113,14 @@ const InvestigatorOverview = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Investigator Dashboard</h1>
-          <p className="text-gray-400 mt-1">Welcome back! Here's your case overview</p>
+          <h1 className="text-3xl font-bold text-white">Welcome, {user.name}!</h1>
+          <p className="text-gray-400 mt-1">Here's your case overview</p>
         </div>
         <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg">
           <Award className="w-5 h-5 text-white" />
           <span className="text-white font-semibold">Senior Investigator</span>
         </div>
       </div>
-
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((stat, index) => (
           <motion.div

@@ -16,7 +16,7 @@ function Login() {
     try {
       const data = await loginApi(email, password);
       login(data);
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
       setError(err.message || 'Failed to login. Please check your credentials.');
     }

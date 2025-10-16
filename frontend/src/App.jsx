@@ -22,7 +22,7 @@ function RoleBasedDashboard() {
   }
   if(role==="investigator" || false)
     return <DashboardInvestigator />;
-   else if (role === 'user' || true) {
+   else if (role === 'user' || role === "victim" || false) {
     return <DashboardUser />; 
   } else {
     return (<HomeGuest />);
@@ -36,7 +36,7 @@ function RoleBasedProfile() {
   
   if (role === 'admin') {
     return <Profile />; 
-  } else if (role === 'user') {
+  } else if (role === 'user' || role === 'victim') {
     return <Profile />; 
   } else if(role==="investigator"){
     return <Profile />;

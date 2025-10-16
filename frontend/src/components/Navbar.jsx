@@ -30,7 +30,7 @@ export default function Navbar() {
                     <span className="text-sm font-mono tracking-widest text-primary md:text-base">CIMAS</span>
                 </motion.button>
                 
-                {isAuthenticated || true ? (
+                {isAuthenticated ? (
                     // Authenticated Navigation
                     <>
                         <div className="hidden items-center gap-6 md:flex">

@@ -68,7 +68,22 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = (tokens) => {
-    const { access, refresh } = tokens;
+    console.log("Logging in with tokens:", tokens);
+    
+    // Handle different response structures
+    let access, refresh;
+    if (tokens.tokens) {
+      // If tokens are nested in a 'tokens' property
+      access = tokens.tokens.access;
+      refresh = tokens.tokens.refresh;
+    } else {
+      // If tokens are at the root level
+      access = tokens.access;
+      refresh = tokens.refresh;
+    }
+    
+    console.log("Access Token:", access);
+    console.log("Refresh Token:", refresh);
     
     // Store tokens
     localStorage.setItem('accessToken', access);
@@ -76,6 +91,7 @@ export const AuthProvider = ({ children }) => {
     
     // Decode and store user info
     const decodedToken = jwtDecode(access);
+    console.log("Decoded Token:", decodedToken);
     setUser(decodedToken);
     setIsAuthenticated(true);
   };
@@ -88,7 +104,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
