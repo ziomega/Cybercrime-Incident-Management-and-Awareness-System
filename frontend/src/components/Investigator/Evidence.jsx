@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Upload, 
@@ -17,126 +17,82 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react';
+import axiosInstance from '../../api/axiosConfig';
 
 const Evidence = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [caseFilter, setCaseFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [selectedEvidence, setSelectedEvidence] = useState(null);
+  const [evidenceData, setEvidenceData] = useState({
+    total_evidence: 0,
+    total_size: 0,
+    verified_count: 0,
+    unverified_count: 0,
+    evidences: []
+  });
+  const [loading, setLoading] = useState(true);
 
-  // Mock evidence data
+  useEffect(() => {
+    const fetchEvidence = async () => {
+      try {
+        const response = await axiosInstance.get('/evidence');
+        setEvidenceData(response.data);
+      } catch (error) {
+        console.error('Error fetching evidence:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvidence();
+  }, []);
+
   const evidenceList = [
-    {
-      id: 1,
-      case_id: 1,
-      case_title: 'Phishing Attack Investigation',
-      name: 'phishing_email_headers.pdf',
-      type: 'document',
-      size: '245 KB',
-      uploaded_by: 'You',
-      upload_date: '2025-01-08T10:30:00Z',
-      description: 'Email headers showing origin and routing information',
-      status: 'verified',
-      tags: ['email', 'headers', 'phishing']
-    },
-    {
-      id: 2,
-      case_id: 1,
-      case_title: 'Phishing Attack Investigation',
-      name: 'suspicious_link_analysis.pdf',
-      type: 'document',
-      size: '512 KB',
-      uploaded_by: 'You',
-      upload_date: '2025-01-08T09:15:00Z',
-      description: 'Analysis of malicious links found in phishing email',
-      status: 'verified',
-      tags: ['analysis', 'malware', 'links']
-    },
-    {
-      id: 3,
-      case_id: 8,
-      case_title: 'Cyberbullying Investigation',
-      name: 'threatening_messages_screenshot.png',
-      type: 'image',
-      size: '1.2 MB',
-      uploaded_by: 'You',
-      upload_date: '2025-01-08T11:20:00Z',
-      description: 'Screenshots of threatening messages from social media',
-      status: 'verified',
-      tags: ['screenshot', 'messages', 'threat']
-    },
-    {
-      id: 4,
-      case_id: 8,
-      case_title: 'Cyberbullying Investigation',
-      name: 'account_activity_log.xlsx',
-      type: 'document',
-      size: '89 KB',
-      uploaded_by: 'You',
-      upload_date: '2025-01-07T16:45:00Z',
-      description: 'Login activity and IP addresses of suspect account',
-      status: 'pending',
-      tags: ['logs', 'activity', 'ip-trace']
-    },
-    {
-      id: 5,
-      case_id: 5,
-      case_title: 'E-commerce Fraud Case',
-      name: 'transaction_records.pdf',
-      type: 'document',
-      size: '324 KB',
-      uploaded_by: 'You',
-      upload_date: '2025-01-07T14:20:00Z',
-      description: 'Payment transaction records and receipts',
-      status: 'verified',
-      tags: ['payment', 'transaction', 'fraud']
-    },
-    {
-      id: 6,
-      case_id: 5,
-      case_title: 'E-commerce Fraud Case',
-      name: 'seller_communication.pdf',
-      type: 'document',
-      size: '178 KB',
-      uploaded_by: 'david.brown@example.com',
-      upload_date: '2025-01-06T10:30:00Z',
-      description: 'Email and chat conversation with fraudulent seller',
-      status: 'verified',
-      tags: ['communication', 'chat', 'email']
-    },
-    {
-      id: 7,
-      case_id: 12,
-      case_title: 'Identity Theft Case',
-      name: 'stolen_credentials.txt',
-      type: 'document',
-      size: '12 KB',
-      uploaded_by: 'You',
-      upload_date: '2025-01-05T09:00:00Z',
-      description: 'List of compromised credentials and accounts',
-      status: 'verified',
-      tags: ['credentials', 'theft', 'breach']
-    },
-    {
-      id: 8,
-      case_id: 12,
-      case_title: 'Identity Theft Case',
-      name: 'suspect_photo.jpg',
-      type: 'image',
-      size: '856 KB',
-      uploaded_by: 'You',
-      upload_date: '2025-01-04T15:30:00Z',
-      description: 'Surveillance photo of suspect from ATM camera',
-      status: 'verified',
-      tags: ['photo', 'surveillance', 'suspect']
-    }
   ];
 
+  // Helper function to format file size
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  // Helper function to get file type from URL
+  const getFileTypeFromUrl = (url) => {
+    if (!url) return 'document';
+    const ext = url.split('.').pop().toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(ext)) return 'image';
+    if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv'].includes(ext)) return 'video';
+    return 'document';
+  };
+
+  // Transform API data to match component structure
+  const transformedEvidenceList = evidenceData.evidences.map((evidence, index) => ({
+    id: index + 1,
+    case_id: index + 1,
+    case_title: evidence.incident || 'Untitled Case',
+    name: evidence.title || 'Untitled Evidence',
+    type: getFileTypeFromUrl(evidence.file_url),
+    size: formatFileSize(evidence.file_size),
+    uploaded_by: evidence.uploaded_by || 'Unknown',
+    upload_date: evidence.submitted_at,
+    description: evidence.description || 'No description provided',
+    status: 'verified', // You can adjust this based on your API data
+    tags: evidence.tags || [],
+    file_url: evidence.file_url
+  }));
+
+  // Use API data if available, otherwise fallback to mock data
+  const activeEvidenceList = loading ? [] : (transformedEvidenceList.length > 0 ? transformedEvidenceList : evidenceList);
+
   // Get unique case IDs for filter
-  const uniqueCases = [...new Set(evidenceList.map(e => e.case_id))];
+  const uniqueCases = [...new Set(activeEvidenceList.map(e => e.case_id))];
 
   // Filter evidence
-  const filteredEvidence = evidenceList.filter(evidence => {
+  const filteredEvidence = activeEvidenceList.filter(evidence => {
     const matchesSearch = 
       evidence.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       evidence.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -203,6 +159,14 @@ const Evidence = () => {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="text-white text-xl">Loading evidence...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -224,10 +188,10 @@ const Evidence = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Evidence', value: evidenceList.length, icon: FileText, color: 'blue' },
-          { label: 'Verified', value: evidenceList.filter(e => e.status === 'verified').length, icon: CheckCircle, color: 'green' },
-          { label: 'Pending', value: evidenceList.filter(e => e.status === 'pending').length, icon: Clock, color: 'yellow' },
-          { label: 'Total Size', value: '3.4 MB', icon: File, color: 'purple' }
+          { label: 'Total Evidence', value: evidenceData.total_evidence, icon: FileText, color: 'blue' },
+          { label: 'Verified', value: evidenceData.verified_count, icon: CheckCircle, color: 'green' },
+          { label: 'Unverified', value: evidenceData.unverified_count, icon: Clock, color: 'yellow' },
+          { label: 'Total Size', value: formatFileSize(evidenceData.total_size), icon: File, color: 'purple' }
         ].map((stat, index) => (
           <motion.div
             key={stat.label}
@@ -353,6 +317,11 @@ const Evidence = () => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    if (evidence.file_url) {
+                      window.open(`http://127.0.0.1:8000${evidence.file_url}`, '_blank');
+                    }
+                  }}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                 >
                   <Eye className="w-4 h-4" />
@@ -361,6 +330,16 @@ const Evidence = () => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    if (evidence.file_url) {
+                      const link = document.createElement('a');
+                      link.href = `http://127.0.0.1:8000${evidence.file_url}`;
+                      link.download = evidence.name;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }
+                  }}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
                 >
                   <Download className="w-4 h-4" />

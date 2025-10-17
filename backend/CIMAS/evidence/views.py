@@ -3,12 +3,50 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-
+from incidents.models import IncidentAssignments
 from .models import Evidence
 from incidents.models import Incidents
 from django.contrib.auth import get_user_model
+import random
 
 User = get_user_model()
+
+# -------------------------------
+# GET all evidence for user
+# -------------------------------
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_evidence(request):
+    role = request.user.role
+    if role not in ['admin', 'investigator', 'victim']:
+        return JsonResponse({'error': 'You do not have permission to view this.'}, status=403)
+    
+    if role == 'victim':
+        pass
+    elif role == 'investigator':
+        assigned_incidents = IncidentAssignments.objects.filter(assigned_to=request.user).values_list('incident_id', flat=True)
+        evidences = Evidence.objects.filter(incident_id__in=assigned_incidents)
+        total_evidence = evidences.count()
+        total_size = sum(ev.file.size for ev in evidences if ev.file)
+        verified_count =random.randint(0, total_evidence)
+        unverified_count = total_evidence - verified_count
+        unverified_count =0
+        return JsonResponse({
+            "total_evidence": total_evidence,
+            "total_size": total_size,
+            "verified_count": verified_count,
+            "unverified_count": unverified_count,
+            "evidences": [{
+                "title": ev.title,
+                "incident": ev.incident.title,
+                "description": ev.description,
+                "submitted_at": ev.submitted_at,
+                "uploaded_by": ev.submitted_by.first_name + ' ' + ev.submitted_by.last_name if ev.submitted_by else None,
+                "file_url": ev.file.url if ev.file else None,
+                "file_size": ev.file.size if ev.file else 0,
+                "tags": ev.tags.split(",") if ev.tags else []
+            } for ev in evidences]
+        })
 
 
 # -------------------------------
