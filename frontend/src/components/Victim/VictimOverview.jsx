@@ -11,8 +11,10 @@ import {
   MessageSquare,
   Phone
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 function VictimOverview() {
+  const { user } = useAuth();
   // Mock data
   const stats = [
     {
@@ -169,7 +171,7 @@ function VictimOverview() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <h1 className="text-3xl font-bold mb-2">Welcome Back!</h1>
+        <h1 className="text-3xl font-bold mb-2">Welcome {user.name}!</h1>
         <p className="text-gray-400">Here's an overview of your cases and activities</p>
       </motion.div>
 
@@ -177,17 +179,21 @@ function VictimOverview() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
+          const iconColorClass = stat.color.includes('orange') ? 'text-orange-400' :
+                                 stat.color.includes('blue') ? 'text-blue-400' :
+                                 stat.color.includes('green') ? 'text-green-400' :
+                                 'text-purple-400';
           return (
             <motion.div
               key={stat.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className={`bg-gray-900 border ${stat.borderColor} rounded-lg p-6 hover:shadow-lg hover:shadow-${stat.color}/10 transition-all`}
+              className={`bg-gray-900 border ${stat.borderColor} rounded-lg p-6 hover:shadow-lg transition-all`}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                  <Icon className={`h-6 w-6 bg-gradient-to-br ${stat.color} bg-clip-text text-transparent`} style={{ WebkitTextFillColor: 'transparent' }} />
+                  <Icon className={`h-6 w-6 ${iconColorClass}`} />
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full ${stat.change.startsWith('+') ? 'bg-green-500/10 text-green-400' : 'bg-gray-500/10 text-gray-400'}`}>
                   {stat.change}
@@ -339,50 +345,7 @@ function VictimOverview() {
         </div>
       </motion.div>
 
-      {/* Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-4"
-      >
-        <motion.button
-          whileHover={{ scale: 1.02, y: -2 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-lg hover:shadow-lg hover:shadow-blue-500/50 transition-all"
-        >
-          <MessageSquare className="h-6 w-6" />
-          <div className="text-left">
-            <h3 className="font-semibold">Message Investigator</h3>
-            <p className="text-sm text-blue-100">Get case updates</p>
-          </div>
-        </motion.button>
-
-        <motion.button
-          whileHover={{ scale: 1.02, y: -2 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg hover:shadow-lg hover:shadow-purple-500/50 transition-all"
-        >
-          <FileText className="h-6 w-6" />
-          <div className="text-left">
-            <h3 className="font-semibold">Submit Evidence</h3>
-            <p className="text-sm text-purple-100">Upload documents</p>
-          </div>
-        </motion.button>
-
-        <motion.button
-          whileHover={{ scale: 1.02, y: -2 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex items-center gap-3 p-4 bg-gradient-to-br from-green-600 to-emerald-600 rounded-lg hover:shadow-lg hover:shadow-green-500/50 transition-all"
-        >
-          <Phone className="h-6 w-6" />
-          <div className="text-left">
-            <h3 className="font-semibold">Emergency Contact</h3>
-            <p className="text-sm text-green-100">24/7 support line</p>
-          </div>
-        </motion.button>
-      </motion.div>
-    </div>
+      </div>
   );
 }
 

@@ -10,7 +10,7 @@ import Login from './components/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
-import Messaging from './Messaging';
+import Messaging from './components/Messaging';
 
 // Component for role-based dashboard rendering
 function RoleBasedDashboard() {
