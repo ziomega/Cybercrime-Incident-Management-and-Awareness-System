@@ -1,4 +1,4 @@
-import RoleBasedTab from "../../RoleBasedTab";
+import RoleBasedTab from "../../components/RoleBasedTab";
 import IncidentChart from "../IncidentChart";
 import ResponseTimeGraph from "./ResponseTimeGraph";
 import { useState } from "react";

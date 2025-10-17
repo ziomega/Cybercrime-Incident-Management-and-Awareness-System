@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import RoleBasedTab from "../../RoleBasedTab";
+import RoleBasedTab from "../../components/RoleBasedTab";
 import VictimOverview from './VictimOverview';
 import MyIncidents from './MyIncidents';
 import CaseStatus from './CaseStatus';

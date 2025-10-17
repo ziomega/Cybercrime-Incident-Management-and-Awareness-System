@@ -138,8 +138,11 @@ def get_me__update_me(request):
             return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated, IsAdminUser])
+@permission_classes([IsAuthenticated])
 def get_users(request):
+    role = request.user.role
+    if role != 'admin' and role != 'investigator':
+        return JsonResponse({'error': 'You do not have permission to view this.'}, status=403)
     users = User.objects.all()
     users_data = [{
         'id': user.id,

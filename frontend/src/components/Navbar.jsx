@@ -17,18 +17,27 @@ export default function Navbar() {
             aria-label="Primary"
         >
             <nav className="mx-auto flex max-w-screen items-center justify-between px-4 py-3 md:py-4">
-                <motion.button 
-                    onClick={() => { navigate("/") }} 
-                    className="flex items-center gap-2"
-                    whileHover={{ scale: 1.02, boxShadow: "0 4px 12px rgba(var(--primary-rgb), 0.4)", }}
-                    whileTap={{ scale: 0.98 }}
-                >
-                    <span
-                        className="inline-block h-6 w-6 rounded-md bg-primary ring-1 ring-primary/30 shadow-[0_0_24px_var(--tech-glow)]"
-                        aria-hidden
+                <div className="flex items-center">
+                    <motion.img
+                        src="/logo.png"
+                        alt="Logo"
+                        className="h-8 w-8 rounded-full"
+                        whileHover={{ scale: 1.1, rotate: 10 }}
+                        whileTap={{ scale: 0.95 }}
                     />
-                    <span className="text-sm font-mono tracking-widest text-primary md:text-base">CIMAS</span>
-                </motion.button>
+                    <motion.button 
+                        onClick={() => { navigate("/") }} 
+                        className="flex items-center"
+                        whileHover={{ scale: 1.02, boxShadow: "0 4px 12px rgba(var(--primary-rgb), 0.4)", }}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        <span
+                            className="inline-block h-6 w-6 rounded-md bg-primary ring-1 ring-primary/30 shadow-[0_0_24px_var(--tech-glow)]"
+                            aria-hidden
+                        />
+                        <span className="text-sm font-mono tracking-widest text-primary md:text-base">CIMAS</span>
+                    </motion.button>
+                </div>
                 
                 {isAuthenticated ? (
                     // Authenticated Navigation

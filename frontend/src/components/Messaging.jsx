@@ -18,7 +18,7 @@ import {
   X,
   Radio
 } from 'lucide-react';
-import { useAuth } from './contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 // Mock data for different roles
 const mockUsersData = {

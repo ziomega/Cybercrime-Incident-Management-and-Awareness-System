@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 
 
 urlpatterns = [
+    path('api/evidence', views.user_evidence, name='user_evidence'),
 	path('api/incidents/<int:id>/evidence', views.incident_evidence, name='incident_evidence'),
 	path('api/evidence/<int:eid>', views.evidence_detail, name='evidence_detail'),
 ]
