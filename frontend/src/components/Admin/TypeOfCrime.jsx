@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 
 const TypeOfCrime = ({ data }) => {
   // Default crime type data
+  console.log("TypeOfCrime received data:", data);
   const defaultData = [
     { 
       type: 'Phishing', 
@@ -247,8 +248,8 @@ const TypeOfCrime = ({ data }) => {
         <h4 className="text-lg font-semibold text-white mb-4">Detailed Breakdown</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {crimeData.map((crime, index) => {
-            const Icon = crime.icon;
-            const isPositiveTrend = crime.trend.startsWith('+');
+            const Icon = crime.icon || AlertTriangle;
+            const isPositiveTrend = crime.trend?.startsWith?.('+') || false;
             
             return (
               <motion.div

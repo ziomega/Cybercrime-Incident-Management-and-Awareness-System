@@ -17,179 +17,44 @@ import {
   UserCheck,
   UserX,
   TrendingUp,
-  Eye
+  Eye,
+  Edit2,
+  Save,
+  X as CloseIcon
 } from 'lucide-react';
+import axiosInstance from '../../api/axiosConfig';
 
 const Users = () => {
-  // Mock data for users
-  const mockUsers = [
-    {
-      id: 1,
-      email: 'john.doe@example.com',
-      first_name: 'John',
-      last_name: 'Doe',
-      role: 'victim',
-      date_joined: '2024-06-15T10:30:00Z',
-      last_login: '2025-01-08T14:22:00Z',
-      is_active: true,
-      cases_reported: 3,
-      cases_resolved: 2,
-      cases_pending: 1
-    },
-    {
-      id: 2,
-      email: 'sarah.chen@cybercrime.gov',
-      first_name: 'Sarah',
-      last_name: 'Chen',
-      role: 'investigator',
-      date_joined: '2023-03-20T09:00:00Z',
-      last_login: '2025-01-08T15:45:00Z',
-      is_active: true,
-      cases_reported: 0,
-      cases_assigned: 12,
-      cases_solved: 9,
-      cases_in_progress: 3
-    },
-    {
-      id: 3,
-      email: 'mike.johnson@example.com',
-      first_name: 'Mike',
-      last_name: 'Johnson',
-      role: 'victim',
-      date_joined: '2024-08-22T11:15:00Z',
-      last_login: '2025-01-07T09:30:00Z',
-      is_active: true,
-      cases_reported: 5,
-      cases_resolved: 4,
-      cases_pending: 1
-    },
-    {
-      id: 4,
-      email: 'admin@cybercrime.gov',
-      first_name: 'Admin',
-      last_name: 'Smith',
-      role: 'admin',
-      date_joined: '2023-01-10T08:00:00Z',
-      last_login: '2025-01-08T16:00:00Z',
-      is_active: true,
-      cases_reported: 0
-    },
-    {
-      id: 5,
-      email: 'emma.davis@example.com',
-      first_name: 'Emma',
-      last_name: 'Davis',
-      role: 'victim',
-      date_joined: '2024-09-10T13:20:00Z',
-      last_login: '2025-01-06T12:10:00Z',
-      is_active: true,
-      cases_reported: 2,
-      cases_resolved: 1,
-      cases_pending: 1
-    },
-    {
-      id: 6,
-      email: 'michael.roberts@cybercrime.gov',
-      first_name: 'Michael',
-      last_name: 'Roberts',
-      role: 'investigator',
-      date_joined: '2023-05-15T10:00:00Z',
-      last_login: '2025-01-08T11:20:00Z',
-      is_active: true,
-      cases_reported: 0,
-      cases_assigned: 15,
-      cases_solved: 11,
-      cases_in_progress: 4
-    },
-    {
-      id: 7,
-      email: 'david.brown@example.com',
-      first_name: 'David',
-      last_name: 'Brown',
-      role: 'victim',
-      date_joined: '2024-11-05T15:30:00Z',
-      last_login: '2025-01-08T10:15:00Z',
-      is_active: true,
-      cases_reported: 1,
-      cases_resolved: 0,
-      cases_pending: 1
-    },
-    {
-      id: 8,
-      email: 'lisa.anderson@example.com',
-      first_name: 'Lisa',
-      last_name: 'Anderson',
-      role: 'victim',
-      date_joined: '2024-04-12T09:45:00Z',
-      last_login: '2025-01-03T14:30:00Z',
-      is_active: true,
-      cases_reported: 4,
-      cases_resolved: 3,
-      cases_pending: 1
-    },
-    {
-      id: 9,
-      email: 'james.wilson@cybercrime.gov',
-      first_name: 'James',
-      last_name: 'Wilson',
-      role: 'investigator',
-      date_joined: '2023-07-08T08:30:00Z',
-      last_login: '2025-01-08T13:00:00Z',
-      is_active: true,
-      cases_reported: 0,
-      cases_assigned: 18,
-      cases_solved: 14,
-      cases_in_progress: 4
-    },
-    {
-      id: 10,
-      email: 'robert.taylor@example.com',
-      first_name: 'Robert',
-      last_name: 'Taylor',
-      role: 'victim',
-      date_joined: '2024-10-20T12:00:00Z',
-      last_login: '2025-01-07T16:45:00Z',
-      is_active: false,
-      cases_reported: 2,
-      cases_resolved: 2,
-      cases_pending: 0
-    },
-    {
-      id: 11,
-      email: 'emily.parker@cybercrime.gov',
-      first_name: 'Emily',
-      last_name: 'Parker',
-      role: 'investigator',
-      date_joined: '2023-09-25T09:15:00Z',
-      last_login: '2025-01-08T14:50:00Z',
-      is_active: true,
-      cases_reported: 0,
-      cases_assigned: 10,
-      cases_solved: 7,
-      cases_in_progress: 3
-    },
-    {
-      id: 12,
-      email: 'jennifer.white@example.com',
-      first_name: 'Jennifer',
-      last_name: 'White',
-      role: 'victim',
-      date_joined: '2024-12-01T10:30:00Z',
-      last_login: '2025-01-08T09:20:00Z',
-      is_active: true,
-      cases_reported: 1,
-      cases_resolved: 0,
-      cases_pending: 1
-    }
-  ];
-
-  const [users, setUsers] = useState(mockUsers);
-  const [filteredUsers, setFilteredUsers] = useState(mockUsers);
+  const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [expandedUser, setExpandedUser] = useState(null);
+  const [editingRole, setEditingRole] = useState(null);
+  const [newRole, setNewRole] = useState('');
+
+  // Fetch users from API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosInstance.get('/users');
+        setUsers(response.data.users || response.data);
+        setFilteredUsers(response.data.users || response.data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        setError('Failed to load users data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   // Filter users based on search, role, and status
   useEffect(() => {
@@ -292,6 +157,41 @@ const Users = () => {
     });
   };
 
+  // Start editing role
+  const startEditingRole = (userId, currentRole) => {
+    setEditingRole(userId);
+    setNewRole(currentRole);
+    // Expand the user profile if not already expanded
+    if (expandedUser !== userId) {
+      setExpandedUser(userId);
+    }
+  };
+
+  // Cancel editing role
+  const cancelEditingRole = () => {
+    setEditingRole(null);
+    setNewRole('');
+  };
+
+  // Save role change
+  const saveRoleChange = async (userId) => {
+    try {
+      // Make API call to update role
+      await axiosInstance.put(`/users/${userId}`, { role: newRole });
+      
+      // Update local state
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, role: newRole } : user
+      ));
+      setEditingRole(null);
+      setNewRole('');
+    } catch (err) {
+      console.error('Error updating user role:', err);
+      // Optionally show error message to user
+      alert('Failed to update user role. Please try again.');
+    }
+  };
+
   // Calculate stats
   const stats = {
     total: users.length,
@@ -305,6 +205,16 @@ const Users = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
+          {error}
+        </div>
       </div>
     );
   }
@@ -512,10 +422,10 @@ const Users = () => {
                             <Clock className="w-4 h-4 text-gray-500" />
                             <span className="text-gray-400">Last Login:</span>
                             <span className="text-gray-200 font-medium">
-                              {new Date(user.last_login).toLocaleDateString('en-US', {
+                              {user.last_login ? new Date(user.last_login).toLocaleDateString('en-US', {
                                 month: 'short',
                                 day: 'numeric'
-                              })}
+                              }) : 'Never'}
                             </span>
                           </div>
                         </div>
@@ -526,17 +436,7 @@ const Users = () => {
                             <div className="flex items-center gap-2 text-sm">
                               <FileText className="w-4 h-4 text-blue-400" />
                               <span className="text-gray-400">Cases Reported:</span>
-                              <span className="text-blue-400 font-semibold">{user.cases_reported}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <CheckCircle className="w-4 h-4 text-green-400" />
-                              <span className="text-gray-400">Resolved:</span>
-                              <span className="text-green-400 font-semibold">{user.cases_resolved}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Clock className="w-4 h-4 text-yellow-400" />
-                              <span className="text-gray-400">Pending:</span>
-                              <span className="text-yellow-400 font-semibold">{user.cases_pending}</span>
+                              <span className="text-blue-400 font-semibold">{user.cases_reported || 0}</span>
                             </div>
                           </div>
                         )}
@@ -546,17 +446,17 @@ const Users = () => {
                             <div className="flex items-center gap-2 text-sm">
                               <FileText className="w-4 h-4 text-purple-400" />
                               <span className="text-gray-400">Cases Assigned:</span>
-                              <span className="text-purple-400 font-semibold">{user.cases_assigned}</span>
+                              <span className="text-purple-400 font-semibold">{user.cases_assigned || 0}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                               <CheckCircle className="w-4 h-4 text-green-400" />
-                              <span className="text-gray-400">Solved:</span>
-                              <span className="text-green-400 font-semibold">{user.cases_solved}</span>
+                              <span className="text-gray-400">Resolved:</span>
+                              <span className="text-green-400 font-semibold">{user.cases_resolved || 0}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
-                              <TrendingUp className="w-4 h-4 text-blue-400" />
-                              <span className="text-gray-400">In Progress:</span>
-                              <span className="text-blue-400 font-semibold">{user.cases_in_progress}</span>
+                              <Clock className="w-4 h-4 text-yellow-400" />
+                              <span className="text-gray-400">Pending:</span>
+                              <span className="text-yellow-400 font-semibold">{user.cases_pending || 0}</span>
                             </div>
                           </div>
                         )}
@@ -579,6 +479,16 @@ const Users = () => {
                           ) : (
                             <ChevronDown className="w-4 h-4" />
                           )}
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => startEditingRole(user.id, user.role)}
+                          className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/30 text-purple-400 rounded-lg hover:bg-purple-500/20 transition-colors"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          <span className="text-sm font-medium">Edit Role</span>
                         </motion.button>
                       </div>
                     </div>
@@ -629,9 +539,41 @@ const Users = () => {
                             {/* Role */}
                             <div>
                               <label className="text-sm text-gray-400 font-medium">Role</label>
-                              <div className="mt-1 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
-                                {getRoleBadge(user.role)}
-                              </div>
+                              {editingRole === user.id ? (
+                                <div className="mt-1 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
+                                  <div className="flex items-center gap-2">
+                                    <select
+                                      value={newRole}
+                                      onChange={(e) => setNewRole(e.target.value)}
+                                      className="flex-1 px-3 py-2 bg-black border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    >
+                                      <option value="victim">Victim/Reporter</option>
+                                      <option value="investigator">Investigator</option>
+                                      <option value="admin">Admin</option>
+                                    </select>
+                                    <motion.button
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={() => saveRoleChange(user.id)}
+                                      className="p-2 bg-green-500/10 border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/20 transition-colors"
+                                    >
+                                      <Save className="w-4 h-4" />
+                                    </motion.button>
+                                    <motion.button
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={cancelEditingRole}
+                                      className="p-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors"
+                                    >
+                                      <CloseIcon className="w-4 h-4" />
+                                    </motion.button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="mt-1 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
+                                  {getRoleBadge(user.role)}
+                                </div>
+                              )}
                             </div>
 
                             {/* Status */}
@@ -654,32 +596,18 @@ const Users = () => {
                             <div>
                               <label className="text-sm text-gray-400 font-medium">Last Login</label>
                               <p className="mt-1 text-gray-200 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
-                                {formatDate(user.last_login)}
+                                {user.last_login ? formatDate(user.last_login) : 'Never logged in'}
                               </p>
                             </div>
 
                             {/* Activity Statistics - Victims */}
                             {user.role === 'victim' && (
-                              <>
-                                <div>
-                                  <label className="text-sm text-gray-400 font-medium">Cases Reported</label>
-                                  <p className="mt-1 text-blue-400 bg-gray-900/50 p-3 rounded-lg border border-gray-800 font-semibold">
-                                    {user.cases_reported}
-                                  </p>
-                                </div>
-                                <div>
-                                  <label className="text-sm text-gray-400 font-medium">Cases Resolved</label>
-                                  <p className="mt-1 text-green-400 bg-gray-900/50 p-3 rounded-lg border border-gray-800 font-semibold">
-                                    {user.cases_resolved}
-                                  </p>
-                                </div>
-                                <div>
-                                  <label className="text-sm text-gray-400 font-medium">Cases Pending</label>
-                                  <p className="mt-1 text-yellow-400 bg-gray-900/50 p-3 rounded-lg border border-gray-800 font-semibold">
-                                    {user.cases_pending}
-                                  </p>
-                                </div>
-                              </>
+                              <div>
+                                <label className="text-sm text-gray-400 font-medium">Cases Reported</label>
+                                <p className="mt-1 text-blue-400 bg-gray-900/50 p-3 rounded-lg border border-gray-800 font-semibold">
+                                  {user.cases_reported || 0}
+                                </p>
+                              </div>
                             )}
 
                             {/* Activity Statistics - Investigators */}
@@ -688,26 +616,26 @@ const Users = () => {
                                 <div>
                                   <label className="text-sm text-gray-400 font-medium">Cases Assigned</label>
                                   <p className="mt-1 text-purple-400 bg-gray-900/50 p-3 rounded-lg border border-gray-800 font-semibold">
-                                    {user.cases_assigned}
+                                    {user.cases_assigned || 0}
                                   </p>
                                 </div>
                                 <div>
-                                  <label className="text-sm text-gray-400 font-medium">Cases Solved</label>
+                                  <label className="text-sm text-gray-400 font-medium">Cases Resolved</label>
                                   <p className="mt-1 text-green-400 bg-gray-900/50 p-3 rounded-lg border border-gray-800 font-semibold">
-                                    {user.cases_solved}
+                                    {user.cases_resolved || 0}
                                   </p>
                                 </div>
                                 <div>
-                                  <label className="text-sm text-gray-400 font-medium">Cases In Progress</label>
-                                  <p className="mt-1 text-blue-400 bg-gray-900/50 p-3 rounded-lg border border-gray-800 font-semibold">
-                                    {user.cases_in_progress}
+                                  <label className="text-sm text-gray-400 font-medium">Cases Pending</label>
+                                  <p className="mt-1 text-yellow-400 bg-gray-900/50 p-3 rounded-lg border border-gray-800 font-semibold">
+                                    {user.cases_pending || 0}
                                   </p>
                                 </div>
                                 <div>
                                   <label className="text-sm text-gray-400 font-medium">Success Rate</label>
                                   <p className="mt-1 text-cyan-400 bg-gray-900/50 p-3 rounded-lg border border-gray-800 font-semibold">
                                     {user.cases_assigned > 0 
-                                      ? Math.round((user.cases_solved / user.cases_assigned) * 100)
+                                      ? Math.round((user.cases_resolved / user.cases_assigned) * 100)
                                       : 0}%
                                   </p>
                                 </div>

@@ -14,7 +14,7 @@ export const login = async (email, password) => {
 
 export const signup = async (userData) => {
   try {
-    const response = await axiosInstance.post('/auth/register/', userData);
+    const response = await axiosInstance.post('/auth/register', userData);
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;

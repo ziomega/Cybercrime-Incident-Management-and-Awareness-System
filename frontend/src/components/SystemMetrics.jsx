@@ -2,46 +2,6 @@ import { CheckCircle, Users, Clock, TrendingUp, TrendingDown, BarChart3 } from '
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 
-const metricsData = [
-  {
-    title: 'Cases Solved',
-    value: 245,
-    previous: 220,
-    unit: 'cases',
-    icon: CheckCircle,
-    color: 'green',
-    analytics: 'Up 11.4% from last month',
-  },
-  {
-    title: 'New Users',
-    value: 1847,
-    previous: 1650,
-    unit: 'users',
-    icon: Users,
-    color: 'blue',
-    analytics: 'Up 12% from last month',
-  },
-  {
-    title: 'Avg Response Time',
-    value: 4.2,
-    previous: 5.8,
-    unit: 'hrs',
-    icon: Clock,
-    color: 'purple',
-    analytics: 'Down 27.6% (faster)',
-    lowerIsBetter: true,
-  },
-  {
-    title: 'Analytics',
-    value: '92%',
-    previous: '88%',
-    unit: 'efficiency',
-    icon: BarChart3,
-    color: 'orange',
-    analytics: 'Up 4% from last month',
-  },
-];
-
 function getChange(current, previous, lowerIsBetter = false) {
   if (typeof current === 'string' || typeof previous === 'string') return null;
   const change = ((current - previous) / previous) * 100;
@@ -56,24 +16,91 @@ const colorMap = {
   orange: 'from-orange-500/20 to-orange-600/20 border-orange-500/30',
 };
 
-const SystemMetrics = () => {
+const SystemMetrics = ({ data }) => {
   const [activeIndex, setActiveIndex] = useState(-1);
   const [hoveredIndex, setHoveredIndex] = useState(null);
+
+  // Default data
+  const defaultMetricsData = [
+    {
+      title: 'Cases Solved',
+      value: 245,
+      previous: 220,
+      unit: 'cases',
+      icon: CheckCircle,
+      color: 'green',
+      analytics: 'Up 11.4% from last month',
+    },
+    {
+      title: 'New Users',
+      value: 1847,
+      previous: 1650,
+      unit: 'users',
+      icon: Users,
+      color: 'blue',
+      analytics: 'Up 12% from last month',
+    },
+    {
+      title: 'Avg Response Time',
+      value: 4.2,
+      previous: 5.8,
+      unit: 'hrs',
+      icon: Clock,
+      color: 'purple',
+      analytics: 'Down 27.6% (faster)',
+      lowerIsBetter: true,
+    },
+    {
+      title: 'Efficiency',
+      value: '92%',
+      previous: '88%',
+      unit: 'efficiency',
+      icon: BarChart3,
+      color: 'orange',
+      analytics: 'Up 4% from last month',
+    },
+  ];
+
+  // Use provided data or default
+  const metricsData = data || defaultMetricsData;
+
+  // Map icon names to components if data contains strings
+  const getIconComponent = (icon) => {
+    // If icon is already a component, return it
+    if (typeof icon === 'function') {
+      return icon;
+    }
+    
+    // If icon is a string, map it to a component
+    if (typeof icon === 'string') {
+      const iconMap = {
+        CheckCircle,
+        Users,
+        UsersIcon: Users,
+        Clock,
+        BarChart3,
+      };
+      return iconMap[icon] || CheckCircle;
+    }
+    
+    // Default fallback
+    return CheckCircle;
+  };
 
 useEffect(() => {
     if (hoveredIndex === null) {
         const interval = setInterval(() => {
             setActiveIndex((prev) => (prev + 1) % metricsData.length);
-        }, 3000); // Increased delay to 8 seconds
+        }, 3000);
         return () => clearInterval(interval);
     }
-}, [hoveredIndex]);
+}, [hoveredIndex, metricsData.length]);
 
   return (
     <div className="w-full py-6 px-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {metricsData.map((card, idx) => {
-          const Icon = card.icon;
+          const Icon = getIconComponent(card.icon);
           const change = getChange(card.value, card.previous, card.lowerIsBetter);
           const isPositive = change !== null ? change > 0 : true;
           const TrendIcon = isPositive ? TrendingUp : TrendingDown;

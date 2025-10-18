@@ -16,130 +16,37 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import axios from 'axios';
+import axiosInstance from '../../api/axiosConfig';
 
 const AllIncidents = () => {
-  // Mock data for incidents
-  const mockIncidents = [
-    {
-      id: 1,
-      user: 'john.doe@example.com',
-      description: 'Phishing email received claiming to be from bank. Email contains suspicious links requesting personal information and account credentials.',
-      status: 'in_progress',
-      reported_at: '2025-01-08T10:30:00Z',
-      location: '123 Main St, New York, NY 10001',
-      crime_type: 'Phishing'
-    },
-    {
-      id: 2,
-      user: 'sarah.wilson@example.com',
-      description: 'Ransomware attack on company servers. All files have been encrypted and a ransom note demanding payment in cryptocurrency has been left.',
-      status: 'assigned',
-      reported_at: '2025-01-07T14:20:00Z',
-      location: '456 Business Ave, Los Angeles, CA 90012',
-      crime_type: 'Ransomware'
-    },
-    {
-      id: 3,
-      user: 'mike.johnson@example.com',
-      description: 'Identity theft - unauthorized credit card transactions detected. Multiple purchases made in different states within hours.',
-      status: 'resolved',
-      reported_at: '2025-01-05T09:15:00Z',
-      location: '789 Oak Drive, Chicago, IL 60601',
-      crime_type: 'Identity Theft'
-    },
-    {
-      id: 4,
-      user: 'emma.davis@example.com',
-      description: 'Social media account hacked. Unauthorized posts and messages sent to contacts asking for money transfers.',
-      status: 'assigned',
-      reported_at: '2025-01-06T16:45:00Z',
-      location: '321 Pine Street, Houston, TX 77001',
-      crime_type: 'Account Takeover'
-    },
-    {
-      id: 5,
-      user: 'david.brown@example.com',
-      description: 'Online shopping fraud - paid for items that never arrived. Seller has disappeared and website is now offline.',
-      status: 'in_progress',
-      reported_at: '2025-01-08T11:30:00Z',
-      location: '654 Elm Road, Phoenix, AZ 85001',
-      crime_type: 'E-commerce Fraud'
-    },
-    {
-      id: 6,
-      user: 'lisa.anderson@example.com',
-      description: 'Data breach detected in company database. Personal information of customers may have been compromised including names, addresses, and payment details.',
-      status: 'resolved',
-      reported_at: '2025-01-03T08:00:00Z',
-      location: '987 Tech Park, San Francisco, CA 94102',
-      crime_type: 'Data Breach'
-    },
-    {
-      id: 7,
-      user: 'robert.taylor@example.com',
-      description: 'Cryptocurrency wallet hacked. All digital assets transferred to unknown wallet address.',
-      status: 'assigned',
-      reported_at: '2025-01-07T13:20:00Z',
-      location: '147 Crypto Lane, Miami, FL 33101',
-      crime_type: 'Cryptocurrency Theft'
-    },
-    {
-      id: 8,
-      user: 'jennifer.white@example.com',
-      description: 'Cyberbullying and harassment through multiple social media platforms. Threatening messages and personal information shared publicly.',
-      status: 'in_progress',
-      reported_at: '2025-01-08T15:00:00Z',
-      location: '258 Valley View, Seattle, WA 98101',
-      crime_type: 'Cyberbullying'
-    },
-    {
-      id: 9,
-      user: 'james.martinez@example.com',
-      description: 'Business email compromise - CEO impersonation. Fraudulent email requesting urgent wire transfer to fake vendor account.',
-      status: 'resolved',
-      reported_at: '2025-01-04T10:45:00Z',
-      location: '369 Corporate Blvd, Boston, MA 02101',
-      crime_type: 'BEC Attack'
-    },
-    {
-      id: 10,
-      user: 'patricia.garcia@example.com',
-      description: 'Malware infection on company network. Multiple computers showing unusual behavior and data exfiltration suspected.',
-      status: 'assigned',
-      reported_at: '2025-01-06T12:30:00Z',
-      location: '741 Industrial Way, Denver, CO 80201',
-      crime_type: 'Malware'
-    }
-  ];
-
-  // Mock assignment data
-  const mockAssignments = {
-    2: {
-      assigned_to: 'Detective Sarah Chen',
-      assigned_at: '2025-01-07T15:00:00Z'
-    },
-    4: {
-      assigned_to: 'Agent Michael Roberts',
-      assigned_at: '2025-01-06T17:30:00Z'
-    },
-    7: {
-      assigned_to: 'Inspector James Wilson',
-      assigned_at: '2025-01-07T14:00:00Z'
-    },
-    10: {
-      assigned_to: 'Detective Emily Parker',
-      assigned_at: '2025-01-06T13:00:00Z'
-    }
-  };
-
-  const [incidents, setIncidents] = useState(mockIncidents);
-  const [filteredIncidents, setFilteredIncidents] = useState(mockIncidents);
+  const [incidents, setIncidents] = useState([]);
+  const [filteredIncidents, setFilteredIncidents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [expandedIncident, setExpandedIncident] = useState(null);
-  const [assignments, setAssignments] = useState(mockAssignments);
+
+  // Fetch incidents from API
+  useEffect(() => {
+    const fetchIncidents = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosInstance.get('/incidents');
+        const incidentsData = response.data.incidents || response.data;
+        setIncidents(incidentsData);
+        setFilteredIncidents(incidentsData);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching incidents:', err);
+        setError('Failed to load incidents data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchIncidents();
+  }, []);
 
   // Filter incidents based on search and status
   useEffect(() => {
@@ -220,6 +127,16 @@ const AllIncidents = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
+          {error}
+        </div>
       </div>
     );
   }
@@ -319,7 +236,6 @@ const AllIncidents = () => {
           ) : (
             filteredIncidents.map((incident, index) => {
               const isExpanded = expandedIncident === incident.id;
-              const assignment = assignments[incident.id];
 
               return (
                 <motion.div
@@ -386,14 +302,14 @@ const AllIncidents = () => {
                         </div>
 
                         {/* Assignment Status */}
-                        {incident.status !== 'in_progress' && (
+                        {incident.status !== 'in_progress' && incident.assigned_to && (
                           <div className="flex items-center gap-2 pt-2">
                             <UserCheck className="w-4 h-4 text-blue-400" />
                             <span className="text-sm text-gray-400">
-                              {incident.status === 'assigned' && assignment 
-                                ? `Assigned to: ${assignment.assigned_to}`
+                              {incident.status === 'assigned' 
+                                ? `Assigned to: ${incident.assigned_to}`
                                 : incident.status === 'resolved'
-                                ? 'Case Resolved'
+                                ? `Resolved by: ${incident.assigned_to}`
                                 : 'Not Assigned'}
                             </span>
                           </div>
@@ -511,21 +427,21 @@ const AllIncidents = () => {
                             </div>
 
                             {/* Assignment Details */}
-                            {assignment && (
+                            {incident.assigned_to && (
                               <div>
                                 <label className="text-sm text-gray-400 font-medium">Assigned To</label>
                                 <p className="mt-1 text-gray-200 bg-gray-900/50 p-3 rounded-lg border border-gray-800 flex items-center gap-2">
                                   <UserCheck className="w-4 h-4 text-blue-400" />
-                                  {assignment.assigned_to}
+                                  {incident.assigned_to}
                                 </p>
                               </div>
                             )}
 
-                            {assignment && assignment.assigned_at && (
+                            {incident.assigned_at && (
                               <div>
                                 <label className="text-sm text-gray-400 font-medium">Assigned At</label>
                                 <p className="mt-1 text-gray-200 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
-                                  {formatDate(assignment.assigned_at)}
+                                  {formatDate(incident.assigned_at)}
                                 </p>
                               </div>
                             )}

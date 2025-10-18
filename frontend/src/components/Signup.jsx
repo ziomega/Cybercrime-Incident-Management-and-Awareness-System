@@ -6,8 +6,10 @@ import { ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
 export default function Signup() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    username: "",
+    first_name: "",
+    last_name: "",
     email: "",
+    phone: "",
     password: "",
     confirmPassword: "",
   });
@@ -19,10 +21,14 @@ export default function Signup() {
   };
 
   const handleNext = () => {
-    if (step === 1 && !form.username) return setError("Please enter your name.");
+    if (step === 1) {
+      if (!form.first_name) return setError("Please enter your first name.");
+      if (!form.last_name) return setError("Please enter your last name.");
+    }
     if (step === 2 && !form.email) return setError("Please enter your email.");
     if (step === 3) {
       if (!form.password) return setError("Please create a password.");
+      if (form.password.length < 8) return setError("Password must be at least 8 characters.");
       if (form.password !== form.confirmPassword)
         return setError("Passwords do not match.");
     }
@@ -37,17 +43,26 @@ export default function Signup() {
 
   const handleSubmit = async () => {
     try {
-      await signupApi(form);
+      // Create payload matching the backend model
+      const payload = {
+        email: form.email,
+        password: form.password,
+        first_name: form.first_name,
+        last_name: form.last_name,
+        phone: form.phone || null,
+        role: form.role,
+      };
+      await signupApi(payload);
       navigate("/login");
     } catch (err) {
-      setError(err.message || "Failed to create an account. Please try again.");
+      setError(err.err || "Failed to create an account. Please try again.");
     }
   };
 
   const steps = [1, 2, 3];
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-[oklch(0.22_0.01_260)] via-[oklch(0.25_0.02_260)] to-[oklch(0.3_0.02_260)] p-8 text-[oklch(0.97_0.01_260)]">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-backdrop-blur-sm p-4">
       <div className="bg-[oklch(0.17_0.01_260)]/80 backdrop-blur-lg shadow-2xl rounded-2xl p-10 w-full max-w-lg border border-[oklch(0.35_0.05_260)] relative overflow-hidden">
         <h1 className="text-3xl font-bold mb-6 text-center">
           {step < 4 ? "Create Your Account" : "All Set!"}
@@ -96,10 +111,18 @@ export default function Signup() {
               </label>
               <input
                 type="text"
-                name="username"
-                value={form.username}
+                name="first_name"
+                value={form.first_name}
                 onChange={handleChange}
-                placeholder="Enter your full name"
+                placeholder="First Name"
+                className="w-full mb-4 p-4 rounded-lg bg-[oklch(0.2_0.01_260)] border border-[oklch(0.4_0.02_260)] focus:outline-none focus:ring-2 focus:ring-[oklch(0.7_0.15_260)]"
+              />
+              <input
+                type="text"
+                name="last_name"
+                value={form.last_name}
+                onChange={handleChange}
+                placeholder="Last Name"
                 className="w-full p-4 rounded-lg bg-[oklch(0.2_0.01_260)] border border-[oklch(0.4_0.02_260)] focus:outline-none focus:ring-2 focus:ring-[oklch(0.7_0.15_260)]"
               />
             </div>
@@ -108,7 +131,7 @@ export default function Signup() {
           {step === 2 && (
             <div>
               <label className="block mb-3 text-base font-medium">
-               What is your email?
+                📧 What is your email?
               </label>
               <input
                 type="email"
@@ -116,6 +139,17 @@ export default function Signup() {
                 value={form.email}
                 onChange={handleChange}
                 placeholder="Enter your email"
+                className="w-full mb-4 p-4 rounded-lg bg-[oklch(0.2_0.01_260)] border border-[oklch(0.4_0.02_260)] focus:outline-none focus:ring-2 focus:ring-[oklch(0.7_0.15_260)]"
+              />
+              <label className="block mb-3 text-base font-medium">
+                📱 Phone Number (Optional)
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="Enter your phone number"
                 className="w-full p-4 rounded-lg bg-[oklch(0.2_0.01_260)] border border-[oklch(0.4_0.02_260)] focus:outline-none focus:ring-2 focus:ring-[oklch(0.7_0.15_260)]"
               />
             </div>
@@ -124,14 +158,14 @@ export default function Signup() {
           {step === 3 && (
             <div>
               <label className="block mb-3 text-base font-medium">
-                🔒 Create a password
+                 Create a password
               </label>
               <input
                 type="password"
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                placeholder="Enter password"
+                placeholder="Enter password (min. 8 characters)"
                 className="w-full mb-4 p-4 rounded-lg bg-[oklch(0.2_0.01_260)] border border-[oklch(0.4_0.02_260)] focus:outline-none focus:ring-2 focus:ring-[oklch(0.7_0.15_260)]"
               />
               <label className="block mb-3 text-base font-medium">
@@ -152,7 +186,7 @@ export default function Signup() {
             <div className="flex flex-col items-center text-center py-8">
               <CheckCircle className="w-16 h-16 text-[oklch(0.7_0.15_260)] mb-4" />
               <h2 className="text-2xl font-semibold mb-2">
-                You're all set, {form.username}!
+                You're all set, {form.first_name}!
               </h2>
               <p className="text-[oklch(0.8_0.02_260)]">
                 Redirecting you to login...
@@ -185,14 +219,25 @@ export default function Signup() {
             ) : (
               <button
                 onClick={async () => {
-  try {
-    await signupApi(form);
-    setStep(5);  // only go to success step on real success
-    navigate("/login");
-  } catch (err) {
-    setError(err.message || "Failed to create an account. Please try again.");
-  }
-}}
+                  try {
+                    // Create payload matching the backend model
+                    const payload = {
+                      email: form.email,
+                      password: form.password,
+                      first_name: form.first_name,
+                      last_name: form.last_name,
+                      phone: form.phone || null,
+                      role: form.role,
+                    };
+                    await signupApi(payload);
+                    setStep(4);  // only go to success step on real success
+                    setTimeout(() => {
+                      navigate("/login");
+                    }, 2000);
+                  } catch (err) {
+                    setError(err.message || "Failed to create an account. Please try again.");
+                  }
+                }}
                 className="flex items-center gap-2 px-6 py-3 font-semibold rounded-lg bg-[oklch(0.7_0.15_260)] hover:bg-[oklch(0.75_0.15_260)] transition-all"
               >
                 Sign Up <ArrowRight size={18} />

@@ -1,6 +1,6 @@
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-const data = [
+const defaultData = [
   { month: 'Jan', incidents: 45, resolved: 38 },
   { month: 'Feb', incidents: 52, resolved: 45 },
   { month: 'Mar', incidents: 48, resolved: 42 },
@@ -13,7 +13,8 @@ const data = [
   { month: 'Oct', incidents: 82, resolved: 70 },
 ];
 
-export function IncidentChart() {
+export function IncidentChart({ data }) {
+  const chartData = data && data.length > 0 ? data : defaultData;
   return (
     <div className="w-full rounded-lg border border-gray-700 bg-black shadow-lg backdrop-blur-sm">
       <div className="p-6 pb-4">
@@ -22,7 +23,7 @@ export function IncidentChart() {
       </div>
       <div className="p-6 pt-0">
         <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={data}>
+          <AreaChart data={chartData}>
             <defs>
               <linearGradient id="colorIncidents" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>

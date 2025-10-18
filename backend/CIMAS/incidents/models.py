@@ -50,7 +50,8 @@ class IncidentAssignments(models.Model):
         HIGH = 'high', 'High'
     priority = models.CharField(max_length=10, choices=priority.choices, default=priority.MEDIUM)
     assigned_at = models.DateTimeField(default=timezone.now,null=True)
-    assigned_deadline = models.DateTimeField(default=timezone.now,null=True)
+    resolved_at = models.DateTimeField(default=timezone.now()+timezone.timedelta(days=7),null=True)
+    assigned_deadline = models.DateTimeField(default=timezone.now()+timezone.timedelta(days=7),null=True)
 
 
 

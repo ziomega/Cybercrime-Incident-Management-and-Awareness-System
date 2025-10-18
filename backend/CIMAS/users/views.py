@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.contrib.auth import authenticate, get_user_model
 from django.conf import settings
 from django.http import JsonResponse
@@ -37,11 +38,11 @@ def register(request):
         # create user
         user = User.objects.create_user(
             email=email,
-            username=email,  # still needed for AbstractUser base
             password=password,
             first_name=first_name,
             last_name=last_name,
-            role=role
+            role=role,
+            phone=data.get('phone', None)
         )
         tokens = get_tokens_for_user(user)
 
@@ -72,6 +73,10 @@ def login(request):
         user = authenticate(username=email, password=password)
 
         if user is not None:
+            # Update last login
+            user.last_login = datetime.now()
+            user.save()
+
             tokens = get_tokens_for_user(user)
             return JsonResponse({
                 'tokens': tokens
@@ -141,7 +146,7 @@ def get_me__update_me(request):
 @permission_classes([IsAuthenticated])
 def get_users(request):
     role = request.user.role
-    if role != 'admin' and role != 'investigator':
+    if role != 'admin':
         return JsonResponse({'error': 'You do not have permission to view this.'}, status=403)
     users = User.objects.all()
     users_data = [{
@@ -150,78 +155,70 @@ def get_users(request):
         'first_name': user.first_name,
         'last_name': user.last_name,
         'role': user.role,
+        'date_joined': user.date_joined.isoformat() if user.date_joined else None,
+        'last_login': user.last_login.isoformat() if user.last_login else None,
         'is_active': user.is_active,
-        'is_staff': user.is_staff
+        'cases_assigned': user.cases_assigned if hasattr(user, 'cases_assigned') else 0,
+        'cases_resolved': user.cases_resolved if hasattr(user, 'cases_resolved') else 0,
+        'cases_pending': user.cases_pending if hasattr(user, 'cases_pending') else 0,
     } for user in users]
 
     return JsonResponse({'users': users_data})
 
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated, IsAdminUser])
-def get_user(request, id):
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def manage_user(request, id):
+    if request.user.role != 'admin':
+        return JsonResponse({'error': 'You do not have permission to perform this action.'}, status=403)
     try:
         user = User.objects.get(id=id)
-        return JsonResponse({
-            'id': user.id,
-            'email': user.email,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'role': user.role,
-            'is_active': user.is_active,
-            'is_staff': user.is_staff
-        })
-    except User.DoesNotExist:
-        return JsonResponse({'error': 'User not found'}, status=404)
 
+        if request.method == 'GET':
+            return JsonResponse({
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'role': user.role,
+                'is_active': user.is_active,
+                'is_staff': user.is_staff
+            })
 
-@api_view(['PUT'])
-@permission_classes([IsAuthenticated, IsAdminUser])
-def update_user(request, id):
-    try:
-        data = json.loads(request.body)
-        user = User.objects.get(id=id)
+        elif request.method == 'PUT':
+            data = json.loads(request.body)
 
-        if 'first_name' in data:
-            user.first_name = data['first_name']
-        if 'last_name' in data:
-            user.last_name = data['last_name']
-        if 'email' in data:
-            if User.objects.exclude(id=user.id).filter(email=data['email']).exists():
-                return JsonResponse({'error': 'Email already exists'}, status=400)
-            user.email = data['email']
-        if 'is_active' in data and isinstance(data['is_active'], bool):
-            user.is_active = data['is_active']
-        if 'is_staff' in data and isinstance(data['is_staff'], bool):
-            user.is_staff = data['is_staff']
-        if 'role' in data:
-            user.role = data['role']
+            if 'first_name' in data:
+                user.first_name = data['first_name']
+            if 'last_name' in data:
+                user.last_name = data['last_name']
+            if 'email' in data:
+                if User.objects.exclude(id=user.id).filter(email=data['email']).exists():
+                    return JsonResponse({'error': 'Email already exists'}, status=400)
+                user.email = data['email']
+            if 'is_active' in data and isinstance(data['is_active'], bool):
+                user.is_active = data['is_active']
+            if 'is_staff' in data and isinstance(data['is_staff'], bool):
+                user.is_staff = data['is_staff']
+            if 'role' in data:
+                user.role = data['role']
 
-        user.save()
-        return JsonResponse({
-            'id': user.id,
-            'email': user.email,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'role': user.role,
-            'is_active': user.is_active,
-            'is_staff': user.is_staff
-        })
-    except User.DoesNotExist:
-        return JsonResponse({'error': 'User not found'}, status=404)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+            user.save()
+            return JsonResponse({
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'role': user.role,
+                'is_active': user.is_active,
+                'is_staff': user.is_staff
+            })
 
+        elif request.method == 'DELETE':
+            if user.id == request.user.id:
+                return JsonResponse({'error': 'Cannot delete yourself'}, status=400)
+            user.delete()
+            return JsonResponse({'message': 'User deleted successfully'})
 
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated, IsAdminUser])
-def delete_user(request, id):
-    try:
-        user = User.objects.get(id=id)
-        if user.id == request.user.id:
-            return JsonResponse({'error': 'Cannot delete yourself'}, status=400)
-        user.delete()
-        return JsonResponse({'message': 'User deleted successfully'})
     except User.DoesNotExist:
         return JsonResponse({'error': 'User not found'}, status=404)
     except Exception as e:

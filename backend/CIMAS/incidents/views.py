@@ -152,7 +152,7 @@ def incidents_list(request):
             "user": inc.user.email,
             "description": inc.description,
             "status": inc.status,
-            "reported_at": inc.reported_at,
+            "reported_at": inc.reported_at.isoformat(),
             "location": inc.location.address if inc.location else None,
             "crime_type": inc.crime_type.crime_type_name if inc.crime_type else None,
         } for inc in incidents]

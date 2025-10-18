@@ -12,14 +12,38 @@ import {
   Phone
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useState, useEffect } from 'react';
+import axiosInstance from '../../api/axiosConfig';
 
 function VictimOverview() {
   const { user } = useAuth();
-  // Mock data
-  const stats = [
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosInstance.get('/analytics/summary');
+        setAnalyticsData(response.data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching analytics:', err);
+        setError('Failed to load analytics data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, []);
+
+  // Stats based on API data
+  const stats = analyticsData ? [
     {
       title: 'Active Cases',
-      value: '2',
+      value: analyticsData.active_cases?.toString() || '0',
       change: '+0',
       icon: AlertTriangle,
       color: 'from-orange-500 to-red-500',
@@ -28,8 +52,8 @@ function VictimOverview() {
     },
     {
       title: 'In Progress',
-      value: '1',
-      change: '+1',
+      value: analyticsData.in_progress_cases?.toString() || '0',
+      change: '+0',
       icon: Clock,
       color: 'from-blue-500 to-cyan-500',
       bgColor: 'bg-blue-500/10',
@@ -37,8 +61,8 @@ function VictimOverview() {
     },
     {
       title: 'Resolved',
-      value: '3',
-      change: '+1',
+      value: analyticsData.resolved_cases?.toString() || '0',
+      change: '+0',
       icon: CheckCircle,
       color: 'from-green-500 to-emerald-500',
       bgColor: 'bg-green-500/10',
@@ -46,35 +70,24 @@ function VictimOverview() {
     },
     {
       title: 'Evidence Submitted',
-      value: '12',
-      change: '+3',
+      value: analyticsData.evidence_submitted?.toString() || '0',
+      change: '+0',
       icon: FileText,
       color: 'from-purple-500 to-pink-500',
       bgColor: 'bg-purple-500/10',
       borderColor: 'border-purple-500/30'
     }
-  ];
+  ] : [];
 
-  const activeCases = [
-    {
-      id: 'CASE-2024-001',
-      type: 'Identity Theft',
-      status: 'In Progress',
-      priority: 'high',
-      investigator: 'John Investigator',
-      lastUpdate: '2 hours ago',
-      progress: 65
-    },
-    {
-      id: 'CASE-2024-003',
-      type: 'Phishing Attack',
-      status: 'Under Review',
-      priority: 'medium',
-      investigator: 'Sarah Investigator',
-      lastUpdate: '1 day ago',
-      progress: 40
-    }
-  ];
+  const activeCases = analyticsData?.active_incidents?.map((incident, index) => ({
+    id: `CASE-${index + 1}`,
+    type: incident.title || 'No Title',
+    status: incident.status || 'N/A',
+    priority: incident.priority || 'N/A',
+    investigator: incident.assigned_investigator || 'Not Assigned',
+    lastUpdate: new Date(incident.reported_at).toLocaleDateString(),
+    progress: parseInt(incident.progress) || 0
+  })) || [];
 
   const upcomingActivities = [
     {
@@ -137,11 +150,21 @@ function VictimOverview() {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'In Progress': return 'text-blue-400 bg-blue-500/10 border-blue-500/30';
-      case 'Under Review': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
-      case 'Resolved': return 'text-green-400 bg-green-500/10 border-green-500/30';
-      default: return 'text-gray-400 bg-gray-500/10 border-gray-500/30';
+    const statusLower = status?.toLowerCase() || '';
+    switch (statusLower) {
+      case 'in_progress':
+      case 'in progress':
+        return 'text-blue-400 bg-blue-500/10 border-blue-500/30';
+      case 'assigned':
+        return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
+      case 'under review':
+        return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
+      case 'resolved':
+        return 'text-green-400 bg-green-500/10 border-green-500/30';
+      case 'closed':
+        return 'text-green-400 bg-green-500/10 border-green-500/30';
+      default:
+        return 'text-gray-400 bg-gray-500/10 border-gray-500/30';
     }
   };
 
@@ -165,15 +188,32 @@ function VictimOverview() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
-      >
-        <h1 className="text-3xl font-bold mb-2">Welcome {user.name}!</h1>
-        <p className="text-gray-400">Here's an overview of your cases and activities</p>
-      </motion.div>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
+          {error}
+        </div>
+      )}
+
+      {/* Main Content */}
+      {!loading && !error && analyticsData && (
+        <>
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <h1 className="text-3xl font-bold mb-2">Welcome {user.name}!</h1>
+            <p className="text-gray-400">Here's an overview of your cases and activities</p>
+          </motion.div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -344,8 +384,9 @@ function VictimOverview() {
           })}
         </div>
       </motion.div>
-
-      </div>
+        </>
+      )}
+    </div>
   );
 }
 

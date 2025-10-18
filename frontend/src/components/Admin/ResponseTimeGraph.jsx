@@ -1,6 +1,6 @@
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-const data = [
+const defaultData = [
   { time: '0-2h', urgent: 12, high: 8, medium: 5, low: 2 },
   { time: '2-4h', urgent: 8, high: 15, medium: 12, low: 6 },
   { time: '4-8h', urgent: 3, high: 10, medium: 18, low: 15 },
@@ -8,7 +8,8 @@ const data = [
   { time: '24h+', urgent: 0, high: 2, medium: 8, low: 20 },
 ];
 
-export function ResponseTimeGraph() {
+export function ResponseTimeGraph({ data }) {
+  const chartData = data && data.length > 0 ? data : defaultData;
   return (
     <div className="w-full rounded-lg border border-gray-700 bg-black shadow-lg backdrop-blur-sm my-6">
       <div className="p-6 pb-4">
@@ -17,7 +18,7 @@ export function ResponseTimeGraph() {
       </div>
       <div className="p-6 pt-0">
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data} barGap={2}>
+          <BarChart data={chartData} barGap={2}>
             <CartesianGrid strokeDasharray="3 3" stroke="#666" opacity={0.3} />
             <XAxis 
               dataKey="time" 
