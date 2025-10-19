@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   CheckCircle, 
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 
 function CaseStatus() {
+  const navigate = useNavigate();
   const [selectedCase, setSelectedCase] = useState('CASE-2024-001');
 
   // Mock data for cases
@@ -340,6 +342,7 @@ function CaseStatus() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate('/messages', { state: { investigator: currentCase.investigator, caseId: currentCase.id } })}
                     className="flex items-center gap-2 mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-sm"
                   >
                     <MessageSquare className="h-4 w-4" />

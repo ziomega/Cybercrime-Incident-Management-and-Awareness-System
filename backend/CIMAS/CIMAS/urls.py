@@ -30,6 +30,7 @@ urlpatterns = [
     path('', include('activity_logs.urls')),
     path('', include('analytics.urls')),
     path('', include('awareness.urls')),
+    path('', include('chat.urls')),
 ]
 
 
