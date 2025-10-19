@@ -29,7 +29,7 @@ const RoleBasedTab = ({ activeTab, setActiveTab }) => {
         { value: 'incidents', label: 'All Incidents', icon: AlertTriangle },
         { value: 'analytics', label: 'Analytics', icon: TrendingUp },
         { value: 'team', label: 'Team Management', icon: UserCheck },
-        { value: 'database', label: 'Database', icon: Database },
+        { value: 'activity', label: 'Activity Log', icon: Activity },
         { value: 'settings', label: 'Settings', icon: Settings },
       ],
       investigator: [
