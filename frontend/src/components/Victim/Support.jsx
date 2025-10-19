@@ -1,76 +1,89 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Phone, ShieldCheck, ShieldOff, MessageSquare, Mail, ExternalLink, LifeBuoy, ArrowRight } from 'lucide-react';
 
 function Support() {
-  const journeySteps = [
-    {
-      id: 1,
-      title: 'Immediate Help',
-      subtitle: 'For urgent situations',
-      icon: Phone,
-      color: 'red',
-      content: {
-        type: 'contact',
-        details: {
-          name: 'Cybercrime Helpline',
-          phone: '1-800-CYBER-HELP',
-          hours: '24/7',
-          description: 'Call for immediate assistance with active cybercrime incidents.',
+const navigate = useNavigate();
+const journeySteps = [
+  {
+    id: 1,
+    title: 'Immediate Help',
+    subtitle: 'For urgent situations',
+    icon: Phone,
+    color: 'red',
+    content: {
+      type: 'contact',
+      details: {
+        name: 'Cybercrime Helpline',
+        phone: '1-800-CYBER-HELP',
+        hours: '24/7',
+        description:
+          'Call for immediate assistance with active cybercrime incidents.',
+      },
+    },
+  },
+  {
+    id: 2,
+    title: 'Secure Yourself',
+    subtitle: 'Critical first steps',
+    icon: ShieldCheck,
+    color: 'yellow',
+    content: {
+      type: 'dos_donts',
+      dos: [
+        'Document all incidents with dates and times.',
+        'Save all evidence (screenshots, emails).',
+        'Change passwords for affected accounts.',
+      ],
+      donts: [
+        'Do not delete any potential evidence.',
+        'Do not engage with the perpetrator.',
+        'Do not pay any ransoms or demands.',
+      ],
+    },
+  },
+  {
+    id: 3,
+    title: 'Get Support',
+    subtitle: 'Resources for recovery',
+    icon: LifeBuoy,
+    color: 'blue',
+    content: {
+      type: 'resources',
+      items: [
+        { title: 'Live Chat', icon: MessageSquare, action: 'Start Chat' },
+        { 
+          title: 'Email Support', 
+          icon: Mail, 
+          action: 'mailto:cimas721@gmail.com' 
         },
-      },
-    },
-    {
-      id: 2,
-      title: 'Secure Yourself',
-      subtitle: 'Critical first steps',
-      icon: ShieldCheck,
-      color: 'yellow',
-      content: {
-        type: 'dos_donts',
-        dos: [
-          'Document all incidents with dates and times.',
-          'Save all evidence (screenshots, emails).',
-          'Change passwords for affected accounts.',
-        ],
-        donts: [
-          'Do not delete any potential evidence.',
-          'Do not engage with the perpetrator.',
-          'Do not pay any ransoms or demands.',
-        ],
-      },
-    },
-    {
-      id: 3,
-      title: 'Get Support',
-      subtitle: 'Resources for recovery',
-      icon: LifeBuoy,
-      color: 'blue',
-      content: {
-        type: 'resources',
-        items: [
-          { title: 'Live Chat', icon: MessageSquare, action: 'Start Chat' },
-          { title: 'Email Support', icon: Mail, action: 'Send Email' },
-          { title: 'Knowledge Base', icon: ExternalLink, action: 'Visit Center' },
-        ],
-      },
-    },
-    {
-      id: 4,
-      title: 'Case Follow-up',
-      subtitle: 'Contact your investigator',
-      icon: ArrowRight,
-      color: 'purple',
-      content: {
-        type: 'action',
-        details: {
-          title: 'Have an Active Case?',
-          description: 'For case-specific questions, message your assigned investigator directly for the fastest response.',
-          buttonText: 'Go to Messages',
-          link: '/messages',
+        { 
+          title: 'Knowledge Base', 
+          icon: ExternalLink, 
+          action: '/awarness' 
         },
+      ],
+    },
+  },
+  {
+    id: 4,
+    title: 'Case Follow-up',
+    subtitle: 'Contact your investigator',
+    icon: ArrowRight,
+    color: 'purple',
+    content: {
+      type: 'action',
+      details: {
+        title: 'Have an Active Case?',
+        description:
+          'For case-specific questions, message your assigned investigator directly for the fastest response.',
+        buttonText: 'Go to Messages',
+        link: '/messages',
       },
     },
-  ];
+  },
+];
+
 
   const getColor = (color) => {
     const colors = {
@@ -169,8 +182,24 @@ function Support() {
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {step.content.items.map((item, i) => {
                           const ItemIcon = item.icon;
+                          const handleClick = () => {
+                            if (item.action.startsWith('mailto:')) {
+                              // Open email client
+                              window.location.href = item.action;
+                            } else if (item.action.startsWith('/')) {
+                              // Navigate to internal page
+                              navigate(item.action);
+                            } else {
+                              navigate('/messages');
+                            }
+                          };
                           return (
-                            <motion.button key={i} whileHover={{ y: -3 }} className="bg-gray-800 hover:bg-gray-700/70 p-4 rounded-lg text-center transition-colors">
+                            <motion.button 
+                              key={i} 
+                              whileHover={{ y: -3 }} 
+                              className="bg-gray-800 hover:bg-gray-700/70 p-4 rounded-lg text-center transition-colors"
+                              onClick={handleClick}
+                            >
                               <ItemIcon className="w-8 h-8 mx-auto mb-2 text-blue-400" />
                               <span className="text-sm font-semibold">{item.title}</span>
                             </motion.button>
@@ -187,7 +216,7 @@ function Support() {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           className="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
-                          onClick={() => window.location.href = step.content.details.link}
+                          onClick={() => navigate(step.content.details.link)}
                         >
                           {step.content.details.buttonText}
                         </motion.button>

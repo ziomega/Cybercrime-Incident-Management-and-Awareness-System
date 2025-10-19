@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   AlertTriangle, 
@@ -12,13 +13,26 @@ import {
   Eye,
   MessageSquare,
   MapPin,
-  TrendingUp
+  TrendingUp,
+  Upload,
+  X,
+  AlertCircle
 } from 'lucide-react';
 
 function MyIncidents() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedIncident, setSelectedIncident] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportForm, setReportForm] = useState({
+    title: '',
+    crimeType: '',
+    description: '',
+    location: '',
+    dateOccurred: '',
+    evidenceFiles: []
+  });
 
   // Mock data for incidents
   const incidents = [
@@ -169,6 +183,55 @@ function MyIncidents() {
     }
   };
 
+  const handleReportSubmit = (e) => {
+    e.preventDefault();
+    // TODO: Submit to backend API
+    console.log('Submitting incident report:', reportForm);
+    
+    // Simulate successful submission
+    alert('Incident reported successfully! You will be notified once an investigator is assigned.');
+    
+    // Reset form and close modal
+    setReportForm({
+      title: '',
+      crimeType: '',
+      description: '',
+      location: '',
+      dateOccurred: '',
+      evidenceFiles: []
+    });
+    setShowReportModal(false);
+  };
+
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files);
+    setReportForm({ ...reportForm, evidenceFiles: [...reportForm.evidenceFiles, ...files] });
+  };
+
+  const removeFile = (index) => {
+    const newFiles = reportForm.evidenceFiles.filter((_, i) => i !== index);
+    setReportForm({ ...reportForm, evidenceFiles: newFiles });
+  };
+
+  const crimeTypes = [
+    'Phishing',
+    'Ransomware',
+    'Identity Theft',
+    'Account Takeover',
+    'E-commerce Fraud',
+    'Data Breach',
+    'Cryptocurrency Theft',
+    'Cyberbullying',
+    'BEC Attack',
+    'Malware',
+    'DDoS Attack',
+    'Social Engineering',
+    'Credit Card Fraud',
+    'Spyware',
+    'Online Harassment',
+    'Other'
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -184,6 +247,7 @@ function MyIncidents() {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          onClick={() => setShowReportModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
         >
           <Plus className="h-5 w-5" />
@@ -350,6 +414,7 @@ function MyIncidents() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate('/messages', { state: { investigator: incident.investigator, caseId: incident.caseId } })}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-sm"
                   >
                     <MessageSquare className="h-4 w-4" />
@@ -424,6 +489,205 @@ function MyIncidents() {
                   </div>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Report Incident Modal */}
+      <AnimatePresence>
+        {showReportModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowReportModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gray-900 border border-gray-800 rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">Report New Incident</h2>
+                  <p className="text-gray-400">Provide details about the cybercrime incident</p>
+                </div>
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleReportSubmit} className="space-y-6">
+                {/* Alert Box */}
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-300">
+                    <p className="font-semibold mb-1">Important:</p>
+                    <p>Your report will be reviewed and assigned to an investigator. Please provide as much detail as possible to help with the investigation.</p>
+                  </div>
+                </div>
+
+                {/* Incident Title */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Incident Title <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={reportForm.title}
+                    onChange={(e) => setReportForm({ ...reportForm, title: e.target.value })}
+                    placeholder="Brief description of the incident"
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Crime Type */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Crime Type <span className="text-red-400">*</span>
+                  </label>
+                  <select
+                    required
+                    value={reportForm.crimeType}
+                    onChange={(e) => setReportForm({ ...reportForm, crimeType: e.target.value })}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select crime type</option>
+                    {crimeTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Detailed Description <span className="text-red-400">*</span>
+                  </label>
+                  <textarea
+                    required
+                    value={reportForm.description}
+                    onChange={(e) => setReportForm({ ...reportForm, description: e.target.value })}
+                    placeholder="Describe what happened in detail. Include dates, times, platforms, usernames, URLs, or any other relevant information..."
+                    rows={6}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Minimum 50 characters</p>
+                </div>
+
+                {/* Location & Date Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Location */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Location/Platform
+                    </label>
+                    <input
+                      type="text"
+                      value={reportForm.location}
+                      onChange={(e) => setReportForm({ ...reportForm, location: e.target.value })}
+                      placeholder="e.g., Facebook, Email, Website URL"
+                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  {/* Date Occurred */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Date Occurred <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={reportForm.dateOccurred}
+                      onChange={(e) => setReportForm({ ...reportForm, dateOccurred: e.target.value })}
+                      max={new Date().toISOString().split('T')[0]}
+                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Evidence Upload */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Evidence Files
+                  </label>
+                  <div className="border-2 border-dashed border-gray-700 rounded-lg p-6 text-center hover:border-gray-600 transition-colors">
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="evidence-upload"
+                      accept="image/*,.pdf,.doc,.docx,.txt"
+                    />
+                    <label htmlFor="evidence-upload" className="cursor-pointer">
+                      <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm text-gray-400 mb-1">
+                        Click to upload evidence files
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Screenshots, documents, emails, etc. (Max 10MB per file)
+                      </p>
+                    </label>
+                  </div>
+
+                  {/* File List */}
+                  {reportForm.evidenceFiles.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {reportForm.evidenceFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-4 w-4 text-blue-400" />
+                            <div>
+                              <p className="text-sm font-medium">{file.name}</p>
+                              <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(2)} KB</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeFile(index)}
+                            className="p-1 hover:bg-gray-700 rounded transition-colors"
+                          >
+                            <X className="h-4 w-4 text-red-400" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-3 pt-4 border-t border-gray-800">
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowReportModal(false)}
+                    className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    type="submit"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-medium"
+                  >
+                    Submit Report
+                  </motion.button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}

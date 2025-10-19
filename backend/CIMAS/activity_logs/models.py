@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 
 class ActivityLog(models.Model):
-    log_id = models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True, db_column='log_id')  # matches frontend naming
     user = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING)
     action = models.CharField(max_length=50, blank=True, null=True)
     timestamp = models.DateTimeField(blank=True, null=True)
