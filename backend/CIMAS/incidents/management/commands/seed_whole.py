@@ -8,6 +8,7 @@ from incidents.models import Incidents, IncidentAssignments, Locations
 from awareness.models import CrimeTypes, Solutions, AwarenessResource
 from activity_logs.models import ActivityLog
 from evidence.models import Evidence
+from chat.models import Message
 
 fake = Faker()
 
@@ -21,6 +22,7 @@ class Command(BaseCommand):
         # Clear existing data (optional - comment out if you want to keep existing data)
         self.stdout.write("Clearing existing data...")
         ActivityLog.objects.all().delete()
+        Message.objects.all().delete()
         Evidence.objects.all().delete()
         IncidentAssignments.objects.all().delete()
         Incidents.objects.all().delete()
@@ -297,6 +299,45 @@ class Command(BaseCommand):
             )
 
         # Print summary
+        # Seed Chat Messages (maintaining relationship with users)
+        self.stdout.write("Creating chat messages...")
+        message_count = 0
+        if user_objs:
+            # Create some broadcast messages
+            broadcasters = [u for u in user_objs if u.role in ["admin", "investigator"]]
+            if not broadcasters:
+                broadcasters = user_objs[:3]
+
+            for _ in range(10):
+                sender = random.choice(broadcasters)
+                Message.objects.create(
+                    sender=sender,
+                    receiver=None,
+                    content=fake.sentence(nb_words=random.randint(6, 20)),
+                    is_broadcast=True,
+                    broadcast_type=random.choice(["all", "investigators", "victims"]),
+                    delivered=True,
+                    read=bool(random.getrandbits(1)),
+                )
+                message_count += 1
+
+            # Create some 1-1 direct messages
+            for _ in range(40):
+                sender = random.choice(user_objs)
+                # Ensure receiver is different from sender
+                receiver_choices = [u for u in user_objs if u.id != sender.id]
+                receiver = random.choice(receiver_choices) if receiver_choices else None
+                Message.objects.create(
+                    sender=sender,
+                    receiver=receiver,
+                    content=fake.sentence(nb_words=random.randint(6, 24)),
+                    is_broadcast=False,
+                    delivered=bool(random.getrandbits(1)),
+                    read=bool(random.getrandbits(1)),
+                )
+                message_count += 1
+
+        # Print summary
         self.stdout.write(self.style.SUCCESS("\n" + "="*60))
         self.stdout.write(self.style.SUCCESS("✅ Database seeded successfully!"))
         self.stdout.write(self.style.SUCCESS("="*60))
@@ -310,6 +351,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"   📎 Evidence Items: {evidence_count}"))
         self.stdout.write(self.style.SUCCESS(f"   📝 Activity Logs: {activity_count}"))
         self.stdout.write(self.style.SUCCESS(f"   📚 Awareness Resources: {len(awareness_topics)}"))
+        self.stdout.write(self.style.SUCCESS(f"   💬 Chat Messages: {message_count}"))
         self.stdout.write(self.style.SUCCESS("="*60))
         self.stdout.write(self.style.SUCCESS("\n🔗 All relationships properly maintained!"))
         self.stdout.write(self.style.SUCCESS("   - Users ↔ Incidents"))
@@ -320,5 +362,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("   - Incidents ↔ Evidence ↔ Users"))
         self.stdout.write(self.style.SUCCESS("   - Crime Types ↔ Solutions"))
         self.stdout.write(self.style.SUCCESS("   - Awareness Resources ↔ Authors (Users)"))
+        self.stdout.write(self.style.SUCCESS("   - Chat Messages ↔ Users"))
         self.stdout.write(self.style.SUCCESS("   - Activity Logs ↔ Users"))
         self.stdout.write(self.style.SUCCESS("="*60 + "\n"))
