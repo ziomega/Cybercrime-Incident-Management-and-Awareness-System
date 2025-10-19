@@ -11,6 +11,8 @@ import Users from "./Users";
 import AssignCase from "./AssignCase";
 import axiosInstance from "../../api/axiosConfig";
 import { CheckCircle, Users as UsersIcon, Clock, BarChart3, Mail, Shield, Lock, FileText, CreditCard, Wifi, Globe, AlertTriangle } from 'lucide-react';
+import ActivityLog from "./ActivityLog";
+
 
 function DashboardAdmin() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -222,6 +224,7 @@ function DashboardAdmin() {
               <AssignCase />
             </div>
           )}
+          {activeTab === 'activity' && <ActivityLog />}
         </>
       )}
     </div>
