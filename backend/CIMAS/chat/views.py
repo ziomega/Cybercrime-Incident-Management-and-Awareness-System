@@ -336,23 +336,20 @@ class AvailableUsersView(APIView):
                 unique_users.append(u)
 
         # Add Admin Panel as a special user visible to everyone
-        try:
-            admin_panel = User.objects.get(email=ADMIN_PANEL_EMAIL)
-            admin_panel_data = {
-                'id': admin_panel.id,
-                'email': admin_panel.email,
-                'first_name': admin_panel.first_name,
-                'last_name': admin_panel.last_name,
-                'role': 'admin_panel',  # Special role identifier
-                'status': 'online',
-                'avatar': 'AP',  # Admin Panel
-                'is_system_user': True,
-            }
-            # Add Admin Panel at the top of the list
-            unique_users.insert(0, admin_panel_data)
-        except User.DoesNotExist:
-            # Admin Panel user doesn't exist yet, skip
-            pass
+        # Get or create Admin Panel user
+        admin_panel = get_admin_panel_user()
+        admin_panel_data = {
+            'id': admin_panel.id,
+            'email': admin_panel.email,
+            'first_name': admin_panel.first_name,
+            'last_name': admin_panel.last_name,
+            'role': 'admin_panel',  # Special role identifier
+            'status': 'online',
+            'avatar': 'AP',  # Admin Panel
+            'is_system_user': True,
+        }
+        # Add Admin Panel at the top of the list
+        unique_users.insert(0, admin_panel_data)
 
         return Response(unique_users, status=status.HTTP_200_OK)
 
