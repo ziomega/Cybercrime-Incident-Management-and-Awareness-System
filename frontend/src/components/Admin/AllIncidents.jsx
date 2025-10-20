@@ -14,7 +14,10 @@ import {
   Eye,
   UserCheck,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  TrendingUp,
+  Folder,
+  Shield
 } from 'lucide-react';
 import axiosInstance from '../../api/axiosConfig';
 
@@ -55,17 +58,24 @@ const AllIncidents = () => {
     // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(incident => 
-        incident.id.toString().includes(searchQuery) ||
+        incident.id?.toString().includes(searchQuery) ||
+        incident.caseId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        incident.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         incident.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        incident.user?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        incident.crime_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        incident.reportedBy?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        incident.investigator?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        incident.type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         incident.location?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     // Apply status filter
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(incident => incident.status === statusFilter);
+      filtered = filtered.filter(incident => {
+        const normalizedIncidentStatus = incident.status?.toLowerCase().replace(/\s+/g, '_');
+        const normalizedFilterStatus = statusFilter.toLowerCase().replace(/\s+/g, '_');
+        return normalizedIncidentStatus === normalizedFilterStatus;
+      });
     }
 
     setFilteredIncidents(filtered);
@@ -73,6 +83,8 @@ const AllIncidents = () => {
 
   // Get status badge styling
   const getStatusBadge = (status) => {
+    const normalizedStatus = status?.toLowerCase().replace(/\s+/g, '_');
+    
     const statusConfig = {
       in_progress: {
         icon: Clock,
@@ -88,10 +100,20 @@ const AllIncidents = () => {
         icon: CheckCircle,
         label: 'Resolved',
         colors: 'bg-green-500/10 text-green-400 border-green-500/30'
+      },
+      pending: {
+        icon: Clock,
+        label: 'Pending',
+        colors: 'bg-orange-500/10 text-orange-400 border-orange-500/30'
+      },
+      closed: {
+        icon: XCircle,
+        label: 'Closed',
+        colors: 'bg-gray-500/10 text-gray-400 border-gray-500/30'
       }
     };
 
-    const config = statusConfig[status] || {
+    const config = statusConfig[normalizedStatus] || {
       icon: AlertCircle,
       label: status,
       colors: 'bg-gray-500/10 text-gray-400 border-gray-500/30'
@@ -102,6 +124,36 @@ const AllIncidents = () => {
     return (
       <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${config.colors}`}>
         <Icon className="w-4 h-4" />
+        <span className="text-sm font-medium">{config.label}</span>
+      </div>
+    );
+  };
+
+  // Get priority badge styling
+  const getPriorityBadge = (priority) => {
+    const priorityConfig = {
+      high: {
+        colors: 'bg-red-500/10 text-red-400 border-red-500/30',
+        label: 'High Priority'
+      },
+      medium: {
+        colors: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
+        label: 'Medium Priority'
+      },
+      low: {
+        colors: 'bg-green-500/10 text-green-400 border-green-500/30',
+        label: 'Low Priority'
+      }
+    };
+
+    const config = priorityConfig[priority?.toLowerCase()] || {
+      colors: 'bg-gray-500/10 text-gray-400 border-gray-500/30',
+      label: priority || 'Normal'
+    };
+
+    return (
+      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${config.colors}`}>
+        <Shield className="w-4 h-4" />
         <span className="text-sm font-medium">{config.label}</span>
       </div>
     );
@@ -161,7 +213,7 @@ const AllIncidents = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search by ID, description, user, crime type, or location..."
+              placeholder="Search by ID, case ID, title, description, reporter, investigator, type, or location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-black border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -197,7 +249,7 @@ const AllIncidents = () => {
               <Clock className="w-5 h-5 text-yellow-400" />
               <span className="text-sm text-gray-400">
                 In Progress: <span className="text-yellow-400 font-semibold">
-                  {incidents.filter(i => i.status === 'in_progress').length}
+                  {incidents.filter(i => i.status?.toLowerCase().replace(/\s+/g, '_') === 'in_progress').length}
                 </span>
               </span>
             </div>
@@ -205,7 +257,7 @@ const AllIncidents = () => {
               <UserCheck className="w-5 h-5 text-blue-400" />
               <span className="text-sm text-gray-400">
                 Assigned: <span className="text-blue-400 font-semibold">
-                  {incidents.filter(i => i.status === 'assigned').length}
+                  {incidents.filter(i => i.status?.toLowerCase().replace(/\s+/g, '_') === 'assigned').length}
                 </span>
               </span>
             </div>
@@ -213,7 +265,7 @@ const AllIncidents = () => {
               <CheckCircle className="w-5 h-5 text-green-400" />
               <span className="text-sm text-gray-400">
                 Resolved: <span className="text-green-400 font-semibold">
-                  {incidents.filter(i => i.status === 'resolved').length}
+                  {incidents.filter(i => i.status?.toLowerCase().replace(/\s+/g, '_') === 'resolved').length}
                 </span>
               </span>
             </div>
@@ -251,13 +303,27 @@ const AllIncidents = () => {
                     <div className="flex items-start justify-between gap-4">
                       {/* Left Section - Main Info */}
                       <div className="flex-1 space-y-3">
-                        {/* ID and Status */}
+                        {/* ID, Case ID and Status */}
                         <div className="flex items-center gap-3 flex-wrap">
                           <span className="text-2xl font-bold text-blue-400">
-                            #{incident.id}
+                            {incident.id}
                           </span>
+                          {incident.caseId && (
+                            <span className="text-sm text-gray-400 bg-gray-800/50 px-3 py-1 rounded-full border border-gray-700">
+                              <Folder className="w-3 h-3 inline mr-1" />
+                              {incident.caseId}
+                            </span>
+                          )}
                           {getStatusBadge(incident.status)}
+                          {incident.priority && getPriorityBadge(incident.priority)}
                         </div>
+
+                        {/* Title */}
+                        {incident.title && (
+                          <h3 className="text-lg font-semibold text-white">
+                            {incident.title}
+                          </h3>
+                        )}
 
                         {/* Description */}
                         <p className="text-gray-300 text-base leading-relaxed">
@@ -270,15 +336,19 @@ const AllIncidents = () => {
                           <div className="flex items-center gap-2 text-sm">
                             <User className="w-4 h-4 text-gray-500" />
                             <span className="text-gray-400">Reporter:</span>
-                            <span className="text-gray-200 font-medium">{incident.user}</span>
+                            <span className="text-gray-200 font-medium">
+                              {incident.reportedBy || incident.user || 'Unknown'}
+                            </span>
                           </div>
 
-                          {/* Crime Type */}
-                          {incident.crime_type && (
+                          {/* Incident Type */}
+                          {(incident.type || incident.crime_type) && (
                             <div className="flex items-center gap-2 text-sm">
                               <AlertCircle className="w-4 h-4 text-gray-500" />
                               <span className="text-gray-400">Type:</span>
-                              <span className="text-gray-200 font-medium">{incident.crime_type}</span>
+                              <span className="text-gray-200 font-medium">
+                                {incident.type || incident.crime_type}
+                              </span>
                             </div>
                           )}
 
@@ -296,21 +366,61 @@ const AllIncidents = () => {
                             <Calendar className="w-4 h-4 text-gray-500" />
                             <span className="text-gray-400">Reported:</span>
                             <span className="text-gray-200 font-medium">
-                              {formatDate(incident.reported_at)}
+                              {incident.reportedDate 
+                                ? new Date(incident.reportedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                                : incident.reported_at 
+                                ? formatDate(incident.reported_at)
+                                : 'N/A'}
                             </span>
                           </div>
+
+                          {/* Evidence Count */}
+                          {incident.evidenceCount !== undefined && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <FileText className="w-4 h-4 text-gray-500" />
+                              <span className="text-gray-400">Evidence:</span>
+                              <span className="text-gray-200 font-medium">
+                                {incident.evidenceCount} {incident.evidenceCount === 1 ? 'item' : 'items'}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Last Update */}
+                          {incident.lastUpdate && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Clock className="w-4 h-4 text-gray-500" />
+                              <span className="text-gray-400">Last Update:</span>
+                              <span className="text-gray-200 font-medium">{incident.lastUpdate}</span>
+                            </div>
+                          )}
                         </div>
 
+                        {/* Progress Bar */}
+                        {incident.progress !== undefined && (
+                          <div className="pt-2">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm text-gray-400">Investigation Progress</span>
+                              <span className="text-sm text-gray-200 font-medium">{incident.progress}%</span>
+                            </div>
+                            <div className="w-full bg-gray-800 rounded-full h-2">
+                              <div 
+                                className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${incident.progress}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Assignment Status */}
-                        {incident.status !== 'in_progress' && incident.assigned_to && (
+                        {(incident.investigator || incident.assigned_to) && (
                           <div className="flex items-center gap-2 pt-2">
                             <UserCheck className="w-4 h-4 text-blue-400" />
                             <span className="text-sm text-gray-400">
-                              {incident.status === 'assigned' 
-                                ? `Assigned to: ${incident.assigned_to}`
-                                : incident.status === 'resolved'
-                                ? `Resolved by: ${incident.assigned_to}`
-                                : 'Not Assigned'}
+                              {incident.status?.toLowerCase() === 'assigned' 
+                                ? `Assigned to: ${incident.investigator || incident.assigned_to}`
+                                : incident.status?.toLowerCase() === 'resolved'
+                                ? `Resolved by: ${incident.investigator || incident.assigned_to}`
+                                : `Investigator: ${incident.investigator || incident.assigned_to}`}
                             </span>
                           </div>
                         )}
@@ -337,7 +447,7 @@ const AllIncidents = () => {
                         </motion.button>
 
                         {/* View Report Button (for resolved cases) */}
-                        {incident.status === 'resolved' && (
+                        {incident.status?.toLowerCase() === 'resolved' && (
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -381,9 +491,30 @@ const AllIncidents = () => {
                             <div>
                               <label className="text-sm text-gray-400 font-medium">Incident ID</label>
                               <p className="mt-1 text-gray-200 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
-                                #{incident.id}
+                                {incident.id}
                               </p>
                             </div>
+
+                            {/* Case ID */}
+                            {incident.caseId && (
+                              <div>
+                                <label className="text-sm text-gray-400 font-medium">Case ID</label>
+                                <p className="mt-1 text-gray-200 bg-gray-900/50 p-3 rounded-lg border border-gray-800 flex items-center gap-2">
+                                  <Folder className="w-4 h-4 text-blue-400" />
+                                  {incident.caseId}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Title */}
+                            {incident.title && (
+                              <div className="md:col-span-2">
+                                <label className="text-sm text-gray-400 font-medium">Title</label>
+                                <p className="mt-1 text-gray-200 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
+                                  {incident.title}
+                                </p>
+                              </div>
+                            )}
 
                             {/* Status */}
                             <div>
@@ -393,19 +524,29 @@ const AllIncidents = () => {
                               </div>
                             </div>
 
-                            {/* Reporter Email */}
+                            {/* Priority */}
+                            {incident.priority && (
+                              <div>
+                                <label className="text-sm text-gray-400 font-medium">Priority</label>
+                                <div className="mt-1 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
+                                  {getPriorityBadge(incident.priority)}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Reporter */}
                             <div>
-                              <label className="text-sm text-gray-400 font-medium">Reporter Email</label>
+                              <label className="text-sm text-gray-400 font-medium">Reported By</label>
                               <p className="mt-1 text-gray-200 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
-                                {incident.user}
+                                {incident.reportedBy || incident.user || 'Unknown'}
                               </p>
                             </div>
 
-                            {/* Crime Type */}
+                            {/* Incident Type */}
                             <div>
-                              <label className="text-sm text-gray-400 font-medium">Crime Type</label>
+                              <label className="text-sm text-gray-400 font-medium">Incident Type</label>
                               <p className="mt-1 text-gray-200 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
-                                {incident.crime_type || 'Not specified'}
+                                {incident.type || incident.crime_type || 'Not specified'}
                               </p>
                             </div>
 
@@ -418,22 +559,70 @@ const AllIncidents = () => {
                               </p>
                             </div>
 
-                            {/* Reported At */}
+                            {/* Reported Date */}
                             <div>
-                              <label className="text-sm text-gray-400 font-medium">Reported At</label>
+                              <label className="text-sm text-gray-400 font-medium">Reported Date</label>
                               <p className="mt-1 text-gray-200 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
-                                {formatDate(incident.reported_at)}
+                                {incident.reportedDate 
+                                  ? new Date(incident.reportedDate).toLocaleDateString('en-US', { 
+                                      year: 'numeric', 
+                                      month: 'long', 
+                                      day: 'numeric' 
+                                    })
+                                  : incident.reported_at 
+                                  ? formatDate(incident.reported_at)
+                                  : 'N/A'}
                               </p>
                             </div>
 
-                            {/* Assignment Details */}
-                            {incident.assigned_to && (
+                            {/* Last Update */}
+                            {incident.lastUpdate && (
                               <div>
-                                <label className="text-sm text-gray-400 font-medium">Assigned To</label>
+                                <label className="text-sm text-gray-400 font-medium">Last Update</label>
+                                <p className="mt-1 text-gray-200 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
+                                  {incident.lastUpdate}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Investigator */}
+                            {(incident.investigator || incident.assigned_to) && (
+                              <div>
+                                <label className="text-sm text-gray-400 font-medium">Investigator</label>
                                 <p className="mt-1 text-gray-200 bg-gray-900/50 p-3 rounded-lg border border-gray-800 flex items-center gap-2">
                                   <UserCheck className="w-4 h-4 text-blue-400" />
-                                  {incident.assigned_to}
+                                  {incident.investigator || incident.assigned_to}
                                 </p>
+                              </div>
+                            )}
+
+                            {/* Evidence Count */}
+                            {incident.evidenceCount !== undefined && (
+                              <div>
+                                <label className="text-sm text-gray-400 font-medium">Evidence Items</label>
+                                <p className="mt-1 text-gray-200 bg-gray-900/50 p-3 rounded-lg border border-gray-800 flex items-center gap-2">
+                                  <FileText className="w-4 h-4 text-gray-400" />
+                                  {incident.evidenceCount} {incident.evidenceCount === 1 ? 'item' : 'items'}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Progress */}
+                            {incident.progress !== undefined && (
+                              <div className="md:col-span-2">
+                                <label className="text-sm text-gray-400 font-medium">Investigation Progress</label>
+                                <div className="mt-1 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-gray-200 font-medium">{incident.progress}%</span>
+                                    <TrendingUp className="w-4 h-4 text-blue-400" />
+                                  </div>
+                                  <div className="w-full bg-gray-800 rounded-full h-3">
+                                    <div 
+                                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300"
+                                      style={{ width: `${incident.progress}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
                               </div>
                             )}
 
@@ -447,8 +636,64 @@ const AllIncidents = () => {
                             )}
                           </div>
 
+                          {/* Timeline Section */}
+                          {incident.timeline && incident.timeline.length > 0 && (
+                            <div className="pt-4 border-t border-gray-800">
+                              <h4 className="text-md font-semibold text-white mb-3 flex items-center gap-2">
+                                <Clock className="w-5 h-5 text-blue-400" />
+                                Investigation Timeline
+                              </h4>
+                              <div className="space-y-3">
+                                {incident.timeline.map((event, idx) => {
+                                  const getEventIcon = (type) => {
+                                    switch(type?.toLowerCase()) {
+                                      case 'report': return AlertCircle;
+                                      case 'assign': return UserCheck;
+                                      case 'evidence': return FileText;
+                                      case 'update': return Clock;
+                                      default: return Calendar;
+                                    }
+                                  };
+
+                                  const getEventColor = (type) => {
+                                    switch(type?.toLowerCase()) {
+                                      case 'report': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
+                                      case 'assign': return 'text-blue-400 bg-blue-500/10 border-blue-500/30';
+                                      case 'evidence': return 'text-green-400 bg-green-500/10 border-green-500/30';
+                                      case 'update': return 'text-purple-400 bg-purple-500/10 border-purple-500/30';
+                                      default: return 'text-gray-400 bg-gray-500/10 border-gray-500/30';
+                                    }
+                                  };
+
+                                  const EventIcon = getEventIcon(event.type);
+
+                                  return (
+                                    <div 
+                                      key={idx}
+                                      className="flex items-start gap-3 p-3 bg-gray-900/50 rounded-lg border border-gray-800"
+                                    >
+                                      <div className={`p-2 rounded-full border ${getEventColor(event.type)}`}>
+                                        <EventIcon className="w-4 h-4" />
+                                      </div>
+                                      <div className="flex-1">
+                                        <p className="text-gray-200 text-sm">{event.event}</p>
+                                        <p className="text-gray-400 text-xs mt-1">
+                                          {new Date(event.date).toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                          })}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
                           {/* Additional Actions for Resolved Cases */}
-                          {incident.status === 'resolved' && (
+                          {incident.status?.toLowerCase() === 'resolved' && (
                             <div className="pt-4 border-t border-gray-800">
                               <motion.button
                                 whileHover={{ scale: 1.02 }}

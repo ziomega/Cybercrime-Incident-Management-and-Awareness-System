@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -18,6 +18,7 @@ import {
   X,
   AlertCircle
 } from 'lucide-react';
+import axiosInstance from '../../api/axiosConfig';
 
 function MyIncidents() {
   const navigate = useNavigate();
@@ -25,121 +26,42 @@ function MyIncidents() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [incidents, setIncidents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [reportForm, setReportForm] = useState({
     title: '',
     crimeType: '',
     description: '',
-    location: '',
+    location: {
+      address: '',
+      city: '',
+      state: '',
+      country: '',
+      zipCode: ''
+    },
     dateOccurred: '',
     evidenceFiles: []
   });
 
-  // Mock data for incidents
-  const incidents = [
-    {
-      id: 'INC-2024-001',
-      caseId: 'CASE-2024-001',
-      title: 'Identity Theft via Social Media',
-      type: 'Identity Theft',
-      status: 'In Progress',
-      priority: 'high',
-      reportedDate: '2024-01-05',
-      investigator: 'John Investigator',
-      description: 'Someone created a fake profile using my personal information and photos.',
-      location: 'Online - Facebook',
-      evidenceCount: 8,
-      lastUpdate: '2 hours ago',
-      progress: 65,
-      timeline: [
-        { date: '2024-01-05', event: 'Incident reported', type: 'report' },
-        { date: '2024-01-06', event: 'Case assigned to investigator', type: 'assign' },
-        { date: '2024-01-08', event: 'Initial evidence collected', type: 'evidence' },
-        { date: '2024-01-10', event: 'Digital forensics in progress', type: 'progress' }
-      ]
-    },
-    {
-      id: 'INC-2024-002',
-      caseId: 'CASE-2024-002',
-      title: 'Online Harassment Campaign',
-      type: 'Cyberbullying',
-      status: 'Resolved',
-      priority: 'medium',
-      reportedDate: '2023-12-20',
-      investigator: 'Sarah Investigator',
-      description: 'Receiving threatening messages and harassment across multiple platforms.',
-      location: 'Online - Multiple Platforms',
-      evidenceCount: 15,
-      lastUpdate: '5 days ago',
-      progress: 100,
-      resolution: 'Perpetrator identified and legal action initiated',
-      timeline: [
-        { date: '2023-12-20', event: 'Incident reported', type: 'report' },
-        { date: '2023-12-21', event: 'Case assigned', type: 'assign' },
-        { date: '2023-12-28', event: 'Evidence analyzed', type: 'evidence' },
-        { date: '2024-01-02', event: 'Case resolved', type: 'resolved' }
-      ]
-    },
-    {
-      id: 'INC-2024-003',
-      caseId: 'CASE-2024-003',
-      title: 'Phishing Email Attack',
-      type: 'Phishing',
-      status: 'Under Review',
-      priority: 'medium',
-      reportedDate: '2024-01-08',
-      investigator: 'Sarah Investigator',
-      description: 'Received suspicious emails claiming to be from my bank requesting account details.',
-      location: 'Email',
-      evidenceCount: 4,
-      lastUpdate: '1 day ago',
-      progress: 40,
-      timeline: [
-        { date: '2024-01-08', event: 'Incident reported', type: 'report' },
-        { date: '2024-01-09', event: 'Case assigned', type: 'assign' },
-        { date: '2024-01-10', event: 'Evidence under review', type: 'progress' }
-      ]
-    },
-    {
-      id: 'INC-2023-045',
-      caseId: 'CASE-2023-045',
-      title: 'Credit Card Fraud',
-      type: 'Financial Fraud',
-      status: 'Resolved',
-      priority: 'high',
-      reportedDate: '2023-11-15',
-      investigator: 'Mike Investigator',
-      description: 'Unauthorized transactions detected on my credit card.',
-      location: 'Online - E-commerce',
-      evidenceCount: 12,
-      lastUpdate: '2 weeks ago',
-      progress: 100,
-      resolution: 'Funds recovered, perpetrator arrested',
-      timeline: [
-        { date: '2023-11-15', event: 'Incident reported', type: 'report' },
-        { date: '2023-11-16', event: 'Case assigned', type: 'assign' },
-        { date: '2023-11-25', event: 'Investigation completed', type: 'progress' },
-        { date: '2023-12-05', event: 'Case resolved', type: 'resolved' }
-      ]
-    },
-    {
-      id: 'INC-2024-004',
-      caseId: 'CASE-2024-004',
-      title: 'Ransomware Attack',
-      type: 'Malware',
-      status: 'Pending',
-      priority: 'high',
-      reportedDate: '2024-01-11',
-      investigator: null,
-      description: 'My computer was infected with ransomware demanding payment.',
-      location: 'Personal Computer',
-      evidenceCount: 2,
-      lastUpdate: 'Just now',
-      progress: 10,
-      timeline: [
-        { date: '2024-01-11', event: 'Incident reported', type: 'report' }
-      ]
+  // Fetch incidents from API
+  useEffect(() => {
+    fetchIncidents();
+  }, []);
+
+  const fetchIncidents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axiosInstance.get('/incidents');
+      setIncidents(response.data);
+    } catch (err) {
+      console.error('Error fetching incidents:', err);
+      setError('Failed to load incidents. Please try again later.');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   // Filter incidents
   const filteredIncidents = incidents.filter(incident => {
@@ -183,24 +105,63 @@ function MyIncidents() {
     }
   };
 
-  const handleReportSubmit = (e) => {
+  const handleReportSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Submit to backend API
-    console.log('Submitting incident report:', reportForm);
     
-    // Simulate successful submission
-    alert('Incident reported successfully! You will be notified once an investigator is assigned.');
-    
-    // Reset form and close modal
-    setReportForm({
-      title: '',
-      crimeType: '',
-      description: '',
-      location: '',
-      dateOccurred: '',
-      evidenceFiles: []
-    });
-    setShowReportModal(false);
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('title', reportForm.title);
+      formData.append('crime_type', reportForm.crimeType);
+      formData.append('description', reportForm.description);
+      
+      // Append location fields separately
+      formData.append('location_address', reportForm.location.address);
+      formData.append('location_city', reportForm.location.city);
+      formData.append('location_state', reportForm.location.state);
+      formData.append('location_country', reportForm.location.country);
+      formData.append('location_zip_code', reportForm.location.zipCode);
+      
+      formData.append('date_occurred', reportForm.dateOccurred);
+      
+      // Append evidence files
+      reportForm.evidenceFiles.forEach((file, index) => {
+        formData.append(`evidence_${index}`, file);
+      });
+
+      // Submit to backend API
+      const response = await axiosInstance.post('/incidents', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('Incident reported successfully:', response.data);
+      alert('Incident reported successfully! You will be notified once an investigator is assigned.');
+      
+      // Refresh incidents list
+      fetchIncidents();
+      
+      // Reset form and close modal
+      setReportForm({
+        title: '',
+        crimeType: '',
+        description: '',
+        location: {
+          address: '',
+          city: '',
+          state: '',
+          country: '',
+          zipCode: ''
+        },
+        dateOccurred: '',
+        evidenceFiles: []
+      });
+      setShowReportModal(false);
+    } catch (err) {
+      console.error('Error submitting incident report:', err);
+      alert('Failed to submit incident report. Please try again.');
+    }
   };
 
   const handleFileUpload = (e) => {
@@ -229,11 +190,35 @@ function MyIncidents() {
     'Credit Card Fraud',
     'Spyware',
     'Online Harassment',
+    'Stalking',
+    'Impersonation',
+    'Online Impersonation',
+    'Voice Phishing',
+    'SMS Phishing',
+    'Whaling',
     'Other'
   ];
 
   return (
     <div className="space-y-6">
+      {/* Loading State */}
+      {loading && (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading incidents...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
+          <p className="text-red-400">{error}</p>
+        </div>
+      )}
+
+      {!loading && !error && (
+        <>
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -585,36 +570,115 @@ function MyIncidents() {
                   <p className="text-xs text-gray-400 mt-1">Minimum 50 characters</p>
                 </div>
 
-                {/* Location & Date Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Location */}
+                {/* Location Fields */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-gray-300">Location Details</h3>
+                  
+                  {/* Address */}
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Location/Platform
+                      Address <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="text"
-                      value={reportForm.location}
-                      onChange={(e) => setReportForm({ ...reportForm, location: e.target.value })}
-                      placeholder="e.g., Facebook, Email, Website URL"
+                      required
+                      value={reportForm.location.address}
+                      onChange={(e) => setReportForm({ 
+                        ...reportForm, 
+                        location: { ...reportForm.location, address: e.target.value }
+                      })}
+                      placeholder="e.g., 14178 Wanda Trail Suite 933"
                       className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
-                  {/* Date Occurred */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Date Occurred <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={reportForm.dateOccurred}
-                      onChange={(e) => setReportForm({ ...reportForm, dateOccurred: e.target.value })}
-                      max={new Date().toISOString().split('T')[0]}
-                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                  {/* City and State Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        City <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={reportForm.location.city}
+                        onChange={(e) => setReportForm({ 
+                          ...reportForm, 
+                          location: { ...reportForm.location, city: e.target.value }
+                        })}
+                        placeholder="e.g., East Georgeview"
+                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        State <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={reportForm.location.state}
+                        onChange={(e) => setReportForm({ 
+                          ...reportForm, 
+                          location: { ...reportForm.location, state: e.target.value }
+                        })}
+                        placeholder="e.g., Mississippi"
+                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
+
+                  {/* Country and Zip Code Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Country <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={reportForm.location.country}
+                        onChange={(e) => setReportForm({ 
+                          ...reportForm, 
+                          location: { ...reportForm.location, country: e.target.value }
+                        })}
+                        placeholder="e.g., Turkey"
+                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Zip Code
+                      </label>
+                      <input
+                        type="text"
+                        value={reportForm.location.zipCode}
+                        onChange={(e) => setReportForm({ 
+                          ...reportForm, 
+                          location: { ...reportForm.location, zipCode: e.target.value }
+                        })}
+                        placeholder="e.g., 10960"
+                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Date Occurred */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Date Occurred <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={reportForm.dateOccurred}
+                    onChange={(e) => setReportForm({ ...reportForm, dateOccurred: e.target.value })}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
 
                 {/* Evidence Upload */}
@@ -692,6 +756,8 @@ function MyIncidents() {
           </motion.div>
         )}
       </AnimatePresence>
+      </>
+      )}
     </div>
   );
 }
