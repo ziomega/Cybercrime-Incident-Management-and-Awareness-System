@@ -67,7 +67,14 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/awareness" element={<AwarenessList />} />
           <Route path="/awareness/:id" element={<AwarenessDetail />} />
-          <Route path="/awareness/create" element={<AwarenessCreate />} />
+          <Route
+            path="/awareness/create"
+            element={
+              <ProtectedRoute>
+                <AwarenessCreate />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

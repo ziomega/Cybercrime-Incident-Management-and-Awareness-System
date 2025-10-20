@@ -1,13 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Upload, AlertCircle } from "lucide-react"
 import { createAwarenessResource, fetchFlairs } from "../api/awareness"
-import { useEffect } from "react"
+import { useAuth } from "../contexts/AuthContext"
 
 export default function AwarenessCreate() {
   const navigate = useNavigate()
+  const { user, isAuthenticated, token } = useAuth()
   const [loading, setLoading] = useState(false)
   const [flairs, setFlairs] = useState([])
   const [error, setError] = useState(null)
@@ -16,11 +17,16 @@ export default function AwarenessCreate() {
   const [formData, setFormData] = useState({
     title: "",
     content: "",
-    author: "",
     synopsis: "",
     flair: "",
     image: null,
   })
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login", { replace: true })
+    }
+  }, [isAuthenticated, navigate])
 
   useEffect(() => {
     const loadFlairs = async () => {
@@ -61,8 +67,14 @@ export default function AwarenessCreate() {
     e.preventDefault()
     setError(null)
 
-    if (!formData.title.trim() || !formData.content.trim() || !formData.author.trim()) {
+    if (!formData.title.trim() || !formData.content.trim()) {
       setError("Please fill in all required fields")
+      return
+    }
+
+    if (!token) {
+      setError("Authentication token not found. Please login again.")
+      navigate("/login")
       return
     }
 
@@ -71,7 +83,6 @@ export default function AwarenessCreate() {
       const formDataToSend = new FormData()
       formDataToSend.append("title", formData.title)
       formDataToSend.append("content", formData.content)
-      formDataToSend.append("author", formData.author)
       formDataToSend.append("synopsis", formData.synopsis || formData.content.slice(0, 120))
       if (formData.flair) {
         formDataToSend.append("flair", formData.flair)
@@ -80,14 +91,47 @@ export default function AwarenessCreate() {
         formDataToSend.append("image", formData.image)
       }
 
+      console.log("[v0] Submitting form with token:", token ? "Present" : "Missing")
+      console.log("[v0] Form data fields:", {
+        title: formData.title,
+        content: formData.content.substring(0, 50) + "...",
+        synopsis: formData.synopsis,
+        flair: formData.flair,
+        hasImage: !!formData.image,
+      })
+
       const response = await createAwarenessResource(formDataToSend)
+      console.log("[v0] Create response:", response)
       navigate(`/awareness/${response.id}`)
     } catch (err) {
-      setError(err.message || "Failed to create article. Please try again.")
-      console.error(err)
+      console.error("[v0] Create error:", err)
+      if (err.response?.status === 401) {
+        setError("Your session has expired. Please login again.")
+        navigate("/login")
+      } else if (err.response?.status === 403) {
+        setError("You don't have permission to create articles.")
+      } else {
+        setError(
+          err.response?.data?.detail ||
+            err.response?.data?.message ||
+            err.message ||
+            "Failed to create article. Please try again.",
+        )
+      }
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+          <p className="text-slate-400">Redirecting to login...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -110,6 +154,9 @@ export default function AwarenessCreate() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-slate-100 mb-2">Create New Article</h1>
           <p className="text-slate-400">Share your cybersecurity insights with the community</p>
+          <p className="text-sm text-indigo-400 mt-3">
+            Publishing as: <span className="font-semibold">{user?.email || user?.username || "User"}</span>
+          </p>
         </div>
 
         {/* Error Alert */}
@@ -138,22 +185,6 @@ export default function AwarenessCreate() {
                 value={formData.title}
                 onChange={handleInputChange}
                 placeholder="Enter article title"
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
-              />
-            </div>
-
-            {/* Author Field */}
-            <div>
-              <label htmlFor="author" className="block text-sm font-semibold text-slate-200 mb-3">
-                Author Name <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                id="author"
-                name="author"
-                value={formData.author}
-                onChange={handleInputChange}
-                placeholder="Your name"
                 className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
               />
             </div>
