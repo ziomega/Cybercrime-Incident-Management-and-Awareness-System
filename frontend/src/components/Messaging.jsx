@@ -16,105 +16,286 @@ import {
   AlertCircle,
   Filter,
   X,
-  Radio
+  Radio,
+  Loader
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-
-// Mock data for different roles
-const mockUsersData = {
-  admin: [
-    { id: 1, name: 'John Investigator', role: 'investigator', status: 'online', avatar: 'JI' },
-    { id: 2, name: 'Sarah Investigator', role: 'investigator', status: 'offline', avatar: 'SI' },
-    { id: 3, name: 'Mike Investigator', role: 'investigator', status: 'online', avatar: 'MI' },
-    { id: 4, name: 'Emma Victim', role: 'victim', caseId: 'CASE-2024-001', status: 'online', avatar: 'EV' },
-    { id: 5, name: 'Alex Victim', role: 'victim', caseId: 'CASE-2024-003', status: 'away', avatar: 'AV' },
-  ],
-  investigator: [
-    { id: 1, name: 'Emma Victim', role: 'victim', caseId: 'CASE-2024-001', status: 'online', avatar: 'EV' },
-    { id: 2, name: 'Robert Victim', role: 'victim', caseId: 'CASE-2024-005', status: 'offline', avatar: 'RV' },
-    { id: 3, name: 'Admin Panel', role: 'admin', status: 'online', avatar: 'AP' },
-  ],
-  victim: [
-    { id: 1, name: 'John Investigator', role: 'investigator', caseId: 'CASE-2024-001', status: 'online', avatar: 'JI' },
-    { id: 2, name: 'Admin Panel', role: 'admin', status: 'online', avatar: 'AP' },
-  ]
-};
-
-const mockMessagesData = {
-  1: [
-    { id: 1, text: 'Hello! I need to discuss the case progress.', sender: 'them', timestamp: '2024-01-10T10:30:00', status: 'read' },
-    { id: 2, text: 'Sure, I\'ve reviewed the latest evidence. Let me share my findings.', sender: 'me', timestamp: '2024-01-10T10:32:00', status: 'read' },
-    { id: 3, text: 'That would be great. I\'m particularly interested in the digital forensics report.', sender: 'them', timestamp: '2024-01-10T10:35:00', status: 'read' },
-    { id: 4, text: 'I\'ll send you the detailed report by end of day.', sender: 'me', timestamp: '2024-01-10T10:37:00', status: 'delivered' },
-  ],
-  2: [
-    { id: 1, text: 'Hi, any updates on my case?', sender: 'them', timestamp: '2024-01-10T09:15:00', status: 'read' },
-    { id: 2, text: 'Yes, we\'ve made significant progress. The investigation is moving forward.', sender: 'me', timestamp: '2024-01-10T09:20:00', status: 'read' },
-  ]
-};
+import { 
+  getAvailableUsers, 
+  getMessages, 
+  sendMessage, 
+  sendBroadcast,
+  getAllMessages,
+  markMessageAsRead 
+} from '../api/messaging';
 
 function Messaging() {
   const { user } = useAuth();
   const userRole = user?.role?.toLowerCase() || 'investigator';
+  // Get user ID - could be 'id' or 'user_id' depending on JWT structure
+  const userId = user?.id || user?.user_id;
   
   const [selectedUser, setSelectedUser] = useState(null);
+  const [availableUsers, setAvailableUsers] = useState([]);
   const [messages, setMessages] = useState({});
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [broadcastType, setBroadcastType] = useState('all');
   const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
-  // Get available users based on role
-  const availableUsers = mockUsersData[userRole] || [];
-
   // Filter users based on search
-  const filteredUsers = availableUsers.filter(u => 
-    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (u.caseId && u.caseId.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredUsers = availableUsers
+    .filter(u => {
+      const fullName = `${u.first_name} ${u.last_name}`.toLowerCase();
+      const email = u.email.toLowerCase();
+      const query = searchQuery.toLowerCase();
+      return fullName.includes(query) || email.includes(query);
+    })
+    .sort((a, b) => {
+      // Sort by most recent message timestamp
+      const aMessages = messages[a.id] || [];
+      const bMessages = messages[b.id] || [];
+      const aLastMessage = aMessages[aMessages.length - 1];
+      const bLastMessage = bMessages[bMessages.length - 1];
+      
+      // If both have messages, compare timestamps
+      if (aLastMessage && bLastMessage) {
+        return new Date(bLastMessage.timestamp) - new Date(aLastMessage.timestamp);
+      }
+      // If only one has messages, prioritize it
+      if (aLastMessage) return -1;
+      if (bLastMessage) return 1;
+      // If neither has messages, maintain original order
+      return 0;
+    });
 
+  // Load available users and their conversations
   useEffect(() => {
-    // Load mock messages
-    setMessages(mockMessagesData);
-  }, []);
+    const fetchUsersAndMessages = async () => {
+      try {
+        setLoading(true);
+        const users = await getAvailableUsers();
+        setAvailableUsers(users);
+        
+        // Fetch messages for all available users
+        const allMessagesPromises = users.map(async (user) => {
+          try {
+            const msgs = await getMessages(user.id);
+            return {
+              userId: user.id,
+              messages: msgs.map(msg => ({
+                id: msg.id,
+                text: msg.content,
+                sender: Number(msg.sender) === Number(userId) ? 'me' : 'them',
+                timestamp: msg.timestamp,
+                status: msg.read ? 'read' : msg.delivered ? 'delivered' : 'sent',
+                originalRead: msg.read
+              }))
+            };
+          } catch (err) {
+            console.error(`Error loading messages for user ${user.id}:`, err);
+            return { userId: user.id, messages: [] };
+          }
+        });
+
+        const allMessagesResults = await Promise.all(allMessagesPromises);
+        
+        // Convert array to object keyed by userId
+        const messagesObj = {};
+        allMessagesResults.forEach(result => {
+          messagesObj[result.userId] = result.messages;
+        });
+        
+        setMessages(messagesObj);
+        setError(null);
+      } catch (err) {
+        console.error('Error loading users:', err);
+        setError('Failed to load users. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId) {
+      fetchUsersAndMessages();
+    }
+  }, [userId]);
+
+  // Load messages when user is selected and mark as read
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!selectedUser) return;
+      
+      try {
+        const msgs = await getMessages(selectedUser.id);
+        console.log('Fetched messages:', msgs);
+        console.log('Current user ID:', userId);
+        
+        // Identify unread messages from the other user that need to be marked as read
+        const unreadMessagesToMark = msgs.filter(
+          msg => Number(msg.sender) !== Number(userId) && !msg.read
+        );
+        
+        setMessages(prev => ({
+          ...prev,
+          [selectedUser.id]: msgs.map(msg => {
+            const isMine = Number(msg.sender) === Number(userId);
+            console.log(`Message ${msg.id}: sender=${msg.sender}, userId=${userId}, isMine=${isMine}`);
+            return {
+              id: msg.id,
+              text: msg.content,
+              sender: isMine ? 'me' : 'them',
+              timestamp: msg.timestamp,
+              status: msg.read ? 'read' : msg.delivered ? 'delivered' : 'sent',
+              originalRead: msg.read  // Keep track of original read status
+            };
+          })
+        }));
+        
+        // Mark unread messages as read (don't await to avoid blocking UI)
+        unreadMessagesToMark.forEach(async (msg) => {
+          try {
+            await markMessageAsRead(msg.id);
+            console.log(`Marked message ${msg.id} as read`);
+            
+            // Update the message status in state after marking as read
+            setMessages(prev => ({
+              ...prev,
+              [selectedUser.id]: prev[selectedUser.id]?.map(m => 
+                m.id === msg.id ? { ...m, status: 'read', originalRead: true } : m
+              ) || []
+            }));
+          } catch (err) {
+            console.error(`Failed to mark message ${msg.id} as read:`, err);
+          }
+        });
+      } catch (err) {
+        console.error('Error loading messages:', err);
+      }
+    };
+
+    fetchMessages();
+    // Poll for new messages every 5 seconds when a conversation is selected
+    const interval = setInterval(fetchMessages, 5000);
+    return () => clearInterval(interval);
+  }, [selectedUser, userId]);
+
+  // Periodic refresh of all conversations (every 10 seconds)
+  useEffect(() => {
+    if (!availableUsers.length || !userId) return;
+
+    const refreshAllConversations = async () => {
+      try {
+        setRefreshing(true);
+        const allMessagesPromises = availableUsers.map(async (user) => {
+          try {
+            const msgs = await getMessages(user.id);
+            return {
+              userId: user.id,
+              messages: msgs.map(msg => ({
+                id: msg.id,
+                text: msg.content,
+                sender: Number(msg.sender) === Number(userId) ? 'me' : 'them',
+                timestamp: msg.timestamp,
+                status: msg.read ? 'read' : msg.delivered ? 'delivered' : 'sent',
+                originalRead: msg.read
+              }))
+            };
+          } catch (err) {
+            console.error(`Error refreshing messages for user ${user.id}:`, err);
+            return null;
+          }
+        });
+
+        const results = await Promise.all(allMessagesPromises);
+        
+        // Update messages state with new data
+        setMessages(prev => {
+          const updated = { ...prev };
+          results.forEach(result => {
+            if (result) {
+              updated[result.userId] = result.messages;
+            }
+          });
+          return updated;
+        });
+      } catch (err) {
+        console.error('Error refreshing conversations:', err);
+      } finally {
+        setRefreshing(false);
+      }
+    };
+
+    // Refresh all conversations every 10 seconds
+    const interval = setInterval(refreshAllConversations, 10000);
+    return () => clearInterval(interval);
+  }, [availableUsers, userId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, selectedUser]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedUser) return;
 
-    const newMsg = {
-      id: Date.now(),
-      text: newMessage,
-      sender: 'me',
-      timestamp: new Date().toISOString(),
-      status: 'sent'
-    };
+    try {
+      setSending(true);
+      const sentMsg = await sendMessage({
+        receiver: selectedUser.id,
+        content: newMessage,
+        is_broadcast: false
+      });
 
-    setMessages(prev => ({
-      ...prev,
-      [selectedUser.id]: [...(prev[selectedUser.id] || []), newMsg]
-    }));
+      // Add message to local state
+      const newMsg = {
+        id: sentMsg.id,
+        text: sentMsg.content,
+        sender: 'me',
+        timestamp: sentMsg.timestamp,
+        status: 'sent'
+      };
 
-    setNewMessage('');
+      setMessages(prev => ({
+        ...prev,
+        [selectedUser.id]: [...(prev[selectedUser.id] || []), newMsg]
+      }));
+
+      setNewMessage('');
+    } catch (err) {
+      console.error('Error sending message:', err);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
-  const handleSendBroadcast = () => {
+  const handleSendBroadcast = async () => {
     if (!broadcastMessage.trim()) return;
 
-    // Simulate sending broadcast
-    console.log('Broadcasting to:', broadcastType, 'Message:', broadcastMessage);
-    
-    // Reset broadcast form
-    setBroadcastMessage('');
-    setShowBroadcast(false);
-    
-    // Show success message (you can add a toast notification here)
-    alert(`Broadcast sent to ${broadcastType === 'all' ? 'all users' : broadcastType}!`);
+    try {
+      setSending(true);
+      await sendBroadcast({
+        content: broadcastMessage,
+        broadcast_type: broadcastType
+      });
+      
+      // Reset broadcast form
+      setBroadcastMessage('');
+      setShowBroadcast(false);
+      
+      alert(`Broadcast sent to ${broadcastType === 'all' ? 'all users' : broadcastType}!`);
+    } catch (err) {
+      console.error('Error sending broadcast:', err);
+      alert('Failed to send broadcast. Please try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -166,7 +347,15 @@ function Messaging() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Messages</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold mb-2">Messages</h1>
+                {refreshing && (
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Loader className="h-4 w-4 animate-spin" />
+                    <span>Syncing...</span>
+                  </div>
+                )}
+              </div>
               <p className="text-gray-400">
                 {userRole === 'admin' && 'Communicate with investigators and victims'}
                 {userRole === 'investigator' && 'Communicate with assigned victims and admin'}
@@ -214,39 +403,50 @@ function Messaging() {
 
             {/* Users List */}
             <div className="flex-1 overflow-y-auto">
-              {filteredUsers.length === 0 ? (
+              {loading ? (
+                <div className="p-8 text-center text-gray-400">
+                  <Loader className="h-12 w-12 mx-auto mb-3 opacity-50 animate-spin" />
+                  <p>Loading conversations...</p>
+                </div>
+              ) : error ? (
+                <div className="p-8 text-center text-red-400">
+                  <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>{error}</p>
+                </div>
+              ) : filteredUsers.length === 0 ? (
                 <div className="p-8 text-center text-gray-400">
                   <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>No conversations found</p>
                 </div>
               ) : (
-                filteredUsers.map((user) => {
-                  const userMessages = messages[user.id] || [];
+                filteredUsers.map((chatUser) => {
+                  const userMessages = messages[chatUser.id] || [];
                   const lastMessage = userMessages[userMessages.length - 1];
                   const unreadCount = userMessages.filter(m => m.sender === 'them' && m.status !== 'read').length;
+                  const userName = `${chatUser.first_name} ${chatUser.last_name}`;
 
                   return (
                     <motion.button
-                      key={user.id}
+                      key={chatUser.id}
                       whileHover={{ backgroundColor: 'rgba(55, 65, 81, 0.5)' }}
-                      onClick={() => setSelectedUser(user)}
+                      onClick={() => setSelectedUser(chatUser)}
                       className={`w-full p-4 border-b border-gray-800 text-left transition-colors ${
-                        selectedUser?.id === user.id ? 'bg-gray-800' : ''
+                        selectedUser?.id === chatUser.id ? 'bg-gray-800' : ''
                       }`}
                     >
                       <div className="flex items-start gap-3">
                         {/* Avatar */}
                         <div className="relative">
-                          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center font-semibold">
-                            {user.avatar}
+                          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center font-semibold text-sm">
+                            {chatUser.avatar}
                           </div>
-                          <div className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-gray-900 ${getStatusColor(user.status)}`} />
+                          <div className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-gray-900 ${getStatusColor(chatUser.status)}`} />
                         </div>
 
                         {/* User Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
-                            <h3 className="font-semibold truncate">{user.name}</h3>
+                            <h3 className="font-semibold truncate">{userName}</h3>
                             {lastMessage && (
                               <span className="text-xs text-gray-400">
                                 {formatTime(lastMessage.timestamp)}
@@ -255,7 +455,7 @@ function Messaging() {
                           </div>
                           <div className="flex items-center justify-between">
                             <p className="text-sm text-gray-400 truncate">
-                              {user.caseId ? `Case: ${user.caseId}` : user.role}
+                              {chatUser.role}
                             </p>
                             {unreadCount > 0 && (
                               <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
@@ -289,15 +489,15 @@ function Messaging() {
                 <div className="p-4 border-b border-gray-800 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center font-semibold">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center font-semibold text-sm">
                         {selectedUser.avatar}
                       </div>
                       <div className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-gray-900 ${getStatusColor(selectedUser.status)}`} />
                     </div>
                     <div>
-                      <h3 className="font-semibold">{selectedUser.name}</h3>
+                      <h3 className="font-semibold">{`${selectedUser.first_name} ${selectedUser.last_name}`}</h3>
                       <p className="text-sm text-gray-400">
-                        {selectedUser.caseId ? `Case: ${selectedUser.caseId}` : selectedUser.role}
+                        {selectedUser.role} • {selectedUser.email}
                       </p>
                     </div>
                   </div>
@@ -378,10 +578,14 @@ function Messaging() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={handleSendMessage}
-                      disabled={!newMessage.trim()}
+                      disabled={!newMessage.trim() || sending}
                       className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors"
                     >
-                      <Send className="h-5 w-5" />
+                      {sending ? (
+                        <Loader className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Send className="h-5 w-5" />
+                      )}
                     </motion.button>
                   </div>
                 </div>
@@ -459,10 +663,17 @@ function Messaging() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleSendBroadcast}
-                    disabled={!broadcastMessage.trim()}
-                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
+                    disabled={!broadcastMessage.trim() || sending}
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
                   >
-                    Send Broadcast
+                    {sending ? (
+                      <>
+                        <Loader className="h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      'Send Broadcast'
+                    )}
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
