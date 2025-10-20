@@ -1,60 +1,63 @@
 from django.shortcuts import render
-
-def create_resource(request):
-	pass
-
-def get_resources(request):
-	pass
-
-def get_resource(request, id):
-	pass
-
-def update_resource(request, id):
-	pass
-
-def delete_resource(request, id):
-	pass
-
 from rest_framework import generics, permissions
-from .models import AwarenessResource
-from .serializers import AwarenessListSerializer, AwarenessDetailSerializer
-from rest_framework.exceptions import PermissionDenied #imports permission denied exception 
+from rest_framework.exceptions import PermissionDenied
+from .models import AwarenessResource, Flair
+from .serializers import (
+    AwarenessListSerializer,
+    AwarenessDetailSerializer,
+    FlairSerializer
+)
 
-# ✅ View class for both List and Create operations
+
+# ✅ View to list all available flairs (for dropdowns in frontend)
+class FlairListView(generics.ListAPIView):
+    queryset = Flair.objects.all().order_by("name")
+    serializer_class = FlairSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+# ✅ View for listing + creating Awareness resources
 class AwarenessResourceListCreateView(generics.ListCreateAPIView):
-    queryset = AwarenessResource.objects.all().order_by("-created_at")
-    #sorts the items in descending order acc to date created
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    #permission policy to allow only authenticated users to create, but anyone can read
 
-    def get_serializer_class(self):#chooses serializer based on request method
+    def get_serializer_class(self):
+        # Use a compact serializer for list, full for detail/create
         if self.request.method == "GET":
-            return AwarenessListSerializer #for listing return this 
-        return AwarenessDetailSerializer #else for creating return the detailed serializer 
+            return AwarenessListSerializer
+        return AwarenessDetailSerializer
+
+    def get_queryset(self):
+        queryset = AwarenessResource.objects.all().order_by("-created_at")
+
+        # ✅ Accept either flair name or ID for filtering
+        flair_param = self.request.query_params.get("flair")
+
+        if flair_param:
+            # Try filtering by name first, else assume it's an ID
+            queryset = queryset.filter(
+                flair__name__iexact=flair_param
+            ) | queryset.filter(flair_id=flair_param)
+
+        return queryset.distinct()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)  # logged-in user becomes author
-		#for create already logged user set as author 
+        serializer.save(author=self.request.user)
 
-# ✅View Class  Retrieve, Update and Delete
+
+# ✅ View for retrieve, update and delete operations
 class AwarenessResourceDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = AwarenessResource.objects.all()
-    #looks up objects by primary key
     serializer_class = AwarenessDetailSerializer
-    #list serializer is not req here 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    #same permission policy as above
 
     def perform_update(self, serializer):
         if self.request.user == serializer.instance.author or self.request.user.is_staff:
             serializer.save()
         else:
             raise PermissionDenied("You are not allowed to update this resource.")
-	#the function checks if the user making the request is the author of the resource or a staff member.
-     # if not it denies it by HHTP 403 Forbidden response
+
     def perform_destroy(self, instance):
         if self.request.user == instance.author or self.request.user.is_staff:
             instance.delete()
         else:
             raise PermissionDenied("You are not allowed to delete this resource.")
-	#similar to update but for delete
