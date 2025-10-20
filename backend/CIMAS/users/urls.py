@@ -17,4 +17,5 @@ urlpatterns = [
 	path('api/users/<int:id>', views.manage_user, name='get_user'),
 	path('api/users/<int:id>', views.manage_user, name='update_user'),
 	path('api/users/<int:id>', views.manage_user, name='delete_user'),
+    path('api/users/investigators', views.get_investigators, name='get_investigators'),
 ]

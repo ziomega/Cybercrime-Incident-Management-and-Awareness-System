@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 import ViewModeTabs from './AssignCase/ViewModeTabs';
 import CaseCard from './AssignCase/CaseCard';
 import InvestigatorCard from './AssignCase/InvestigatorCard';
@@ -7,11 +7,20 @@ import SearchAndFilter from './AssignCase/SearchAndFilter';
 import AssignmentActionBar from './AssignCase/AssignmentActionBar';
 import SuccessMessage from './AssignCase/SuccessMessage';
 import InfoCard from './AssignCase/InfoCard';
+import PriorityChangeModal from './AssignCase/PriorityChangeModal';
 import { 
-  mockUnassignedCases, 
-  mockAssignedCases, 
-  mockInvestigators 
-} from './AssignCase/mockData';
+  getUnassignedCases,
+  getAssignedCases,
+  getInvestigators,
+  assignCase as assignCaseAPI,
+  reassignCase as reassignCaseAPI,
+  updateCasePriority
+} from '../../api/assignCaseService';
+import {
+  transformUnassignedCase,
+  transformAssignedCase,
+  transformInvestigator
+} from './AssignCase/dataTransformers';
 import { 
   getPriorityBadge, 
   getWorkloadBadge, 
@@ -24,9 +33,9 @@ const AssignCase = () => {
   const [viewMode, setViewMode] = useState('unassigned'); // 'unassigned' or 'reassign'
   
   // State management
-  const [unassignedCases, setUnassignedCases] = useState(mockUnassignedCases);
-  const [assignedCases, setAssignedCases] = useState(mockAssignedCases);
-  const [investigators, setInvestigators] = useState(mockInvestigators);
+  const [unassignedCases, setUnassignedCases] = useState([]);
+  const [assignedCases, setAssignedCases] = useState([]);
+  const [investigators, setInvestigators] = useState([]);
   const [selectedCase, setSelectedCase] = useState(null);
   const [selectedInvestigator, setSelectedInvestigator] = useState(null);
   const [searchCaseQuery, setSearchCaseQuery] = useState('');
@@ -34,7 +43,44 @@ const AssignCase = () => {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [isAssigning, setIsAssigning] = useState(false);
   const [assignmentSuccess, setAssignmentSuccess] = useState(false);
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [priorityModalOpen, setPriorityModalOpen] = useState(false);
+  const [caseToEditPriority, setCaseToEditPriority] = useState(null);
+  const [isUpdatingPriority, setIsUpdatingPriority] = useState(false);
+
+  // Fetch data on component mount and when view mode changes
+  useEffect(() => {
+    fetchData();
+  }, [viewMode]);
+
+  // Fetch all required data
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch investigators (needed for both modes)
+      const investigatorsData = await getInvestigators();
+      const transformedInvestigators = investigatorsData.map(transformInvestigator);
+      setInvestigators(transformedInvestigators);
+
+      // Fetch cases based on view mode
+      if (viewMode === 'unassigned') {
+        const unassignedData = await getUnassignedCases();
+        const transformedUnassigned = unassignedData.map(transformUnassignedCase);
+        setUnassignedCases(transformedUnassigned);
+      } else {
+        const assignedData = await getAssignedCases();
+        const transformedAssigned = assignedData.map(transformAssignedCase);
+        setAssignedCases(transformedAssigned);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handler for view mode change
   const handleViewModeChange = () => {
@@ -50,6 +96,7 @@ const AssignCase = () => {
   const filteredCases = casesToShow.filter(case_item => {
     const matchesSearch = 
       case_item.id.toString().includes(searchCaseQuery) ||
+      (case_item.title?.toLowerCase().includes(searchCaseQuery.toLowerCase()) || false) ||
       case_item.description.toLowerCase().includes(searchCaseQuery.toLowerCase()) ||
       case_item.crime_type.toLowerCase().includes(searchCaseQuery.toLowerCase()) ||
       (case_item.assigned_to?.name.toLowerCase().includes(searchCaseQuery.toLowerCase()) || false);
@@ -72,19 +119,71 @@ const AssignCase = () => {
   // Get recommended investigators for selected case
   const recommendedInvestigators = getRecommendedInvestigators(filteredInvestigators, selectedCase);
 
+  // Handle opening priority edit modal
+  const handlePriorityEdit = (caseItem) => {
+    setCaseToEditPriority(caseItem);
+    setPriorityModalOpen(true);
+  };
+
+  // Handle priority change
+  const handlePriorityChange = async (newPriority) => {
+    if (!caseToEditPriority || caseToEditPriority.priority === newPriority) return;
+    
+    setIsUpdatingPriority(true);
+    setError(null);
+    
+    try {
+      await updateCasePriority(caseToEditPriority.id, newPriority);
+      
+      // Update local state
+      if (viewMode === 'unassigned') {
+        setUnassignedCases(prev => prev.map(c => 
+          c.id === caseToEditPriority.id 
+            ? { ...c, priority: newPriority }
+            : c
+        ));
+      } else {
+        setAssignedCases(prev => prev.map(c => 
+          c.id === caseToEditPriority.id 
+            ? { ...c, priority: newPriority }
+            : c
+        ));
+      }
+      
+      // Update the case to edit priority state
+      setCaseToEditPriority(prev => ({ ...prev, priority: newPriority }));
+      
+      setIsUpdatingPriority(false);
+      
+      // Close modal after short delay
+      setTimeout(() => {
+        setPriorityModalOpen(false);
+        setCaseToEditPriority(null);
+      }, 500);
+    } catch (err) {
+      console.error('Error updating priority:', err);
+      setError(err.response?.data?.error || 'Failed to update priority. Please try again.');
+      setIsUpdatingPriority(false);
+    }
+  };
+
   // Handle case assignment
   const handleAssignment = async () => {
     if (!selectedCase || !selectedInvestigator) return;
     
     setIsAssigning(true);
+    setError(null);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
       if (viewMode === 'unassigned') {
-        // Remove assigned case from unassigned list
+        // Assign the case
+        await assignCaseAPI(selectedCase.id, selectedInvestigator.id);
+        
+        // Update local state
         setUnassignedCases(prev => prev.filter(c => c.id !== selectedCase.id));
         
-        // Add to assigned cases
+        // Optionally refresh assigned cases for accurate count
+        // Or add to assigned cases locally
         const newAssignedCase = {
           ...selectedCase,
           status: 'assigned',
@@ -97,7 +196,10 @@ const AssignCase = () => {
         };
         setAssignedCases(prev => [...prev, newAssignedCase]);
       } else {
-        // Reassignment: Update the assigned investigator
+        // Reassign the case
+        await reassignCaseAPI(selectedCase.id, selectedInvestigator.id);
+        
+        // Update local state
         setAssignedCases(prev => prev.map(c => 
           c.id === selectedCase.id 
             ? {
@@ -138,13 +240,37 @@ const AssignCase = () => {
         setSelectedCase(null);
         setSelectedInvestigator(null);
       }, 2000);
-    }, 1500);
+    } catch (err) {
+      console.error('Error during assignment:', err);
+      setError(err.response?.data?.error || 'Failed to assign case. Please try again.');
+      setIsAssigning(false);
+    }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
+          <div>
+            <p className="text-red-400 font-medium">Error Loading Data</p>
+            <p className="text-red-300 text-sm mt-1">{error}</p>
+            <button
+              onClick={fetchData}
+              className="mt-3 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -164,6 +290,25 @@ const AssignCase = () => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Error Alert (shown during assignment errors) */}
+        {error && !loading && (
+          <div className="lg:col-span-2">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-red-400 font-medium">Assignment Error</p>
+                <p className="text-red-300 text-sm mt-1">{error}</p>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-400 hover:text-red-300"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Left Column - Cases */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -179,7 +324,7 @@ const AssignCase = () => {
             onSearchChange={setSearchCaseQuery}
             filterValue={priorityFilter}
             onFilterChange={setPriorityFilter}
-            searchPlaceholder={viewMode === 'unassigned' ? 'Search cases...' : 'Search cases or investigator...'}
+            searchPlaceholder={viewMode === 'unassigned' ? 'Search by ID, title, description, crime type...' : 'Search by ID, title, description, investigator...'}
           />
 
           {/* Cases List */}
@@ -199,6 +344,7 @@ const AssignCase = () => {
                   viewMode={viewMode}
                   getPriorityBadge={getPriorityBadge}
                   formatDate={formatDate}
+                  onPriorityEdit={handlePriorityEdit}
                 />
               ))
             )}
@@ -284,6 +430,19 @@ const AssignCase = () => {
         viewMode={viewMode}
         caseId={selectedCase?.id}
         investigatorName={selectedInvestigator?.name}
+      />
+
+      {/* Priority Change Modal */}
+      <PriorityChangeModal
+        isOpen={priorityModalOpen}
+        onClose={() => {
+          setPriorityModalOpen(false);
+          setCaseToEditPriority(null);
+        }}
+        caseItem={caseToEditPriority}
+        currentPriority={caseToEditPriority?.priority}
+        onPriorityChange={handlePriorityChange}
+        isUpdating={isUpdatingPriority}
       />
 
       {/* Custom Scrollbar Styles */}

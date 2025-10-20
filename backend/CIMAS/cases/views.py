@@ -18,13 +18,21 @@ def update_case(request, id):
     incident.status = request.data.get("status", incident.status)
     incident.save()
 
-    try:
-        assignment = IncidentAssignments.objects.get(incident=incident)
-        if "priority" in request.data:
+    # Handle priority update
+    if "priority" in request.data:
+        try:
+            assignment = IncidentAssignments.objects.get(incident=incident)
             assignment.priority = request.data.get("priority", assignment.priority)
             assignment.save()
-    except IncidentAssignments.DoesNotExist:
-        pass
+        except IncidentAssignments.DoesNotExist:
+            # For unassigned cases, create assignment with priority but no assigned_to
+            # This allows tracking priority even before assignment
+            priority = request.data.get("priority", "medium")
+            IncidentAssignments.objects.create(
+                incident=incident,
+                priority=priority,
+                assigned_to=None
+            )
 
     return Response({"message": "Case updated successfully!"}, status=status.HTTP_200_OK)
 
@@ -146,12 +154,34 @@ def reassign_case(request, id, userId):
 
 @api_view(['GET'])
 def get_unassigned_cases(request):
-	unassigned_cases = (Incidents.objects.exclude(status="resolved")).exclude(id__in=IncidentAssignments.objects.values_list('incident_id', flat=True))
+	# Get unassigned cases (cases without assigned_to in IncidentAssignments)
+	unassigned_cases = (Incidents.objects.exclude(status="resolved")
+                        .exclude(id__in=IncidentAssignments.objects.filter(assigned_to__isnull=False)
+                                .values_list('incident_id', flat=True)))
 	
-	data = [{
-		"case_id": uc.id,
-		"case_description": uc.description,
-		"reported_at": uc.reported_at,
-	} for uc in unassigned_cases]
+	data = []
+	for uc in unassigned_cases:
+		# Try to get priority from IncidentAssignments if it exists
+		try:
+			assignment = IncidentAssignments.objects.get(incident=uc)
+			priority = assignment.priority if assignment.priority else "medium"
+		except IncidentAssignments.DoesNotExist:
+			priority = "medium"
+		
+		data.append({
+			"case_id": uc.id,
+			"id": uc.id,
+			"title": uc.title,
+			"case_description": uc.description,
+			"description": uc.description,
+			"crime_type": uc.crime_type.crime_type_name if uc.crime_type else "Unknown",
+			"status": uc.status if uc.status else "in_progress",
+			"priority": priority,
+			"reported_at": uc.reported_at.isoformat() if uc.reported_at else None,
+			"reported_by": f"{uc.user.first_name} {uc.user.last_name}" if uc.user else "Unknown",
+			"location": (f"{uc.location.address}, {uc.location.city}, {uc.location.state}, {uc.location.country}" 
+						if uc.location else "Unknown"),
+		})
+	
 	return Response(data)
 	

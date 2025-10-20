@@ -70,7 +70,7 @@ const InvestigatorCard = ({
             <Clock className="w-3.5 h-3.5 text-blue-400" />
             <span className="text-xs text-gray-400">Avg Time</span>
           </div>
-          <p className="text-sm font-bold text-white">{investigator.avg_resolution_time}d</p>
+          <p className="text-sm font-bold text-white">{investigator.avg_resolution_time}</p>
         </div>
       </div>
 

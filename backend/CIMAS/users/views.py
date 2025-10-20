@@ -6,8 +6,28 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 import json
+from .models import Investigators
+from incidents.models import IncidentAssignments
 
 User = get_user_model()
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_investigators(request):
+    if request.user.role != 'admin':
+        return JsonResponse({'error': 'You do not have permission to view this.'}, status=403)
+    investigators = Investigators.objects.select_related('user').all()
+    investigators_data = [{
+        'id': inv.investigator_id,
+        'email': inv.user.email,
+        'first_name': inv.user.first_name,
+        'last_name': inv.user.last_name,
+        "department": inv.department if hasattr(inv, 'department') else '',
+        'cases_assigned': IncidentAssignments.objects.filter(assigned_to=inv.user).count(),
+        'cases_resolved': IncidentAssignments.objects.filter(assigned_to=inv.user, incident__status='resolved').count(),
+    } for inv in investigators]
+
+    return JsonResponse({'investigators': investigators_data})
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -158,9 +178,9 @@ def get_users(request):
         'date_joined': user.date_joined.isoformat() if user.date_joined else None,
         'last_login': user.last_login.isoformat() if user.last_login else None,
         'is_active': user.is_active,
-        'cases_assigned': user.cases_assigned if hasattr(user, 'cases_assigned') else 0,
-        'cases_resolved': user.cases_resolved if hasattr(user, 'cases_resolved') else 0,
-        'cases_pending': user.cases_pending if hasattr(user, 'cases_pending') else 0,
+        'cases_assigned': IncidentAssignments.objects.filter(assigned_to=user).count() if hasattr(user, 'id') else 0,
+        'cases_resolved': IncidentAssignments.objects.filter(assigned_to=user, incident__status='resolved').count() if hasattr(user, 'id') else 0,
+        'cases_pending': IncidentAssignments.objects.filter(assigned_to=user, incident__status='pending').count() if hasattr(user, 'id') else 0,
     } for user in users]
 
     return JsonResponse({'users': users_data})

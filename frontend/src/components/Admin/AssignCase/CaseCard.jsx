@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
-import { FileText, User, Calendar, Shield } from 'lucide-react';
+import { FileText, User, Calendar, Shield, Edit3 } from 'lucide-react';
 
-const CaseCard = ({ caseItem, isSelected, onSelect, viewMode, getPriorityBadge, formatDate }) => {
+const CaseCard = ({ caseItem, isSelected, onSelect, viewMode, getPriorityBadge, formatDate, onPriorityEdit }) => {
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
@@ -14,8 +14,28 @@ const CaseCard = ({ caseItem, isSelected, onSelect, viewMode, getPriorityBadge, 
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <span className="text-lg font-bold text-blue-400">#{caseItem.id}</span>
-        {getPriorityBadge(caseItem.priority)}
+        <div className="flex items-center gap-2">
+          {getPriorityBadge(caseItem.priority)}
+          {onPriorityEdit && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPriorityEdit(caseItem);
+              }}
+              className="p-1.5 bg-gray-800/50 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 rounded-lg transition-colors group"
+              title="Change priority"
+            >
+              <Edit3 className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-400" />
+            </button>
+          )}
+        </div>
       </div>
+      
+      {caseItem.title && (
+        <h3 className="text-white font-semibold text-sm mb-2">
+          {caseItem.title}
+        </h3>
+      )}
       
       <p className="text-gray-300 text-sm mb-3 line-clamp-2">
         {caseItem.description}
